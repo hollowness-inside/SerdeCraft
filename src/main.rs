@@ -1,5 +1,5 @@
-mod ser;
 mod de;
+mod ser;
 
 mod result;
 
