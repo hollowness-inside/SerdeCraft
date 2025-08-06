@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 serde = "1.0.219"
+torrento = { version = "0.1.0", path = "../torrento" }
+websocket = "0.27.1"

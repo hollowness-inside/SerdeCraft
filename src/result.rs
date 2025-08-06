@@ -3,6 +3,7 @@ pub type MinecraftResult<T> = Result<T, MinecraftError>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MinecraftError {
     Custom(String),
+    InvalidData(String),
 }
 
 impl std::fmt::Display for MinecraftError {
