@@ -19,10 +19,16 @@ impl MinecraftSerializer {
         let message = Message::Text(block_name.into());
         self.socket
             .send(message)
-            .map_err(|e| MinecraftError::SendError(e.to_string()))?;
+            .map_err(|e| MinecraftError::WebSocketSend {
+                message: "Failed to send block placement message".to_string(),
+                source: Box::new(e),
+            })?;
         self.socket
             .read()
-            .map_err(|e| MinecraftError::RecvError(e.to_string()))?;
+            .map_err(|e| MinecraftError::WebSocketReceive {
+                message: "Failed to receive block placement confirmation".to_string(),
+                source: Box::new(e),
+            })?;
         Ok(())
     }
 
@@ -241,7 +247,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
             let rem = bits % 10;
             let block = MinecraftSerializer::u8_to_logs(rem as u8);
             if block.len() != 1 {
-                return Err(MinecraftError::Custom("Couldn't serialize f64".to_string()));
+                return Err(MinecraftError::FloatSerializationError);
             }
             blocks.push(block[0]);
             bits /= 10;
@@ -249,7 +255,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         let rem = bits % 10;
         let block = MinecraftSerializer::u8_to_logs(rem as u8);
         if block.len() != 1 {
-            return Err(MinecraftError::Custom("Couldn't serialize f64".to_string()));
+            return Err(MinecraftError::FloatSerializationError);
         }
         blocks.push(block[0]);
 
