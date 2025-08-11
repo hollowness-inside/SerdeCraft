@@ -41,22 +41,10 @@ fn main() {
 
     let server = TcpListener::bind("127.0.0.1:8765").unwrap();
     for stream in server.incoming() {
+        let websocket = accept(stream.unwrap()).unwrap();
         println!("WebSocket connection established!");
 
-        let websocket = accept(stream.unwrap()).unwrap();
         let mut serializer = MinecraftSerializer::new(websocket);
         v.serialize(&mut serializer).unwrap();
-    }
-}
-
-#[test]
-fn test_main() {
-    let server = TcpListener::bind("127.0.0.1:8765").unwrap();
-    for stream in server.incoming() {
-        let websocket = accept(stream.unwrap()).unwrap();
-        let mut serializer = MinecraftSerializer::new(websocket);
-        "strong consulatation recommended"
-            .serialize(&mut serializer)
-            .unwrap();
     }
 }
