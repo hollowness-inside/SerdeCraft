@@ -1,27 +1,51 @@
-use std::{net::TcpStream, num::ParseIntError, string::FromUtf8Error};
-
-use tungstenite::{HandshakeError, ServerHandshake, handshake::server::NoCallback};
+use thiserror::Error;
 
 pub type MinecraftResult<T> = Result<T, MinecraftError>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Error)]
 pub enum MinecraftError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Custom: {0}")]
     Custom(String),
+
+    #[error("Tungstenite error: {0}")]
+    Tungstenite(#[from] Box<tungstenite::Error>),
+
+    #[error("ParseInt error: {0}")]
+    ParseInt(#[from] std::num::ParseIntError),
+
+    #[error("Invalid Data: {0}")]
     InvalidData(String),
+
+    #[error("Send error: {0}")]
     SendError(String),
+
+    #[error("Receive error: {0}")]
     RecvError(String),
+
+    #[error("Invalid Block Type: {0}")]
     InvalidBlockType(String),
-    Char,
+
+    #[error("Char error: {0}")]
+    Char(String),
+
+    #[error("Char error")]
+    CharChar,
+
+    #[error("UTF-8 error: {0}")]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
+
+    #[error("Not Matching: {0}")]
     NotMatching(String),
 }
 
-impl std::fmt::Display for MinecraftError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Minecraft serialization error")
+impl From<tungstenite::Error> for MinecraftError {
+    fn from(err: tungstenite::Error) -> Self {
+        MinecraftError::Tungstenite(Box::new(err))
     }
 }
-
-impl serde::ser::StdError for MinecraftError {}
 
 impl serde::ser::Error for MinecraftError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
@@ -34,40 +58,5 @@ impl serde::de::Error for MinecraftError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
         eprintln!("Deserialization error: {}", msg);
         MinecraftError::Custom(msg.to_string())
-    }
-}
-
-impl From<tungstenite::Error> for MinecraftError {
-    fn from(err: tungstenite::Error) -> Self {
-        eprintln!("WebSocket error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<std::io::Error> for MinecraftError {
-    fn from(err: std::io::Error) -> Self {
-        eprintln!("IO error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<HandshakeError<ServerHandshake<TcpStream, NoCallback>>> for MinecraftError {
-    fn from(err: HandshakeError<ServerHandshake<TcpStream, NoCallback>>) -> Self {
-        eprintln!("Handshake error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<FromUtf8Error> for MinecraftError {
-    fn from(err: FromUtf8Error) -> Self {
-        eprintln!("UTF-8 conversion error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<ParseIntError> for MinecraftError {
-    fn from(err: ParseIntError) -> Self {
-        eprintln!("ParseInt error: {}", err);
-        MinecraftError::Custom(err.to_string())
     }
 }

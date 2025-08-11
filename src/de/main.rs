@@ -61,7 +61,7 @@ impl<'a> MinecraftDeserializer {
         let mut array = vec!['0'; n];
         for item in array.iter_mut() {
             let block = self.consume()?;
-            let chr = block.to_digit().ok_or(MinecraftError::Char)?;
+            let chr = block.to_digit().ok_or(MinecraftError::CharChar)?;
             *item = chr;
         }
 
@@ -89,7 +89,7 @@ impl<'a> MinecraftDeserializer {
         loop {
             let block = self.consume()?;
             if block.is_log() {
-                let chr = block.to_digit().ok_or(MinecraftError::Char)?;
+                let chr = block.to_digit().ok_or(MinecraftError::CharChar)?;
                 digits.push(chr);
             } else {
                 self.rewind()?;
@@ -105,15 +105,15 @@ impl<'a> MinecraftDeserializer {
 
     fn parse_u8(&mut self) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
-        src.push(self.consume()?.to_digit().ok_or(MinecraftError::Char)?);
-        src.push(self.consume()?.to_digit().ok_or(MinecraftError::Char)?);
+        src.push(self.consume()?.to_digit().ok_or(MinecraftError::CharChar)?);
+        src.push(self.consume()?.to_digit().ok_or(MinecraftError::CharChar)?);
         Ok(u8::from_str_radix(&src, 16)?)
     }
 
     fn u8_from_blocks(&mut self, blocks: &[MinecraftBlock]) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
-        src.push(blocks[0].to_digit().ok_or(MinecraftError::Char)?);
-        src.push(blocks[1].to_digit().ok_or(MinecraftError::Char)?);
+        src.push(blocks[0].to_digit().ok_or(MinecraftError::CharChar)?);
+        src.push(blocks[1].to_digit().ok_or(MinecraftError::CharChar)?);
         u8::from_str_radix(&src, 16).map_err(|_| MinecraftError::Custom("Invalid u8".to_string()))
     }
 
