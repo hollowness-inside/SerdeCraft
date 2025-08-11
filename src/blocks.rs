@@ -342,7 +342,9 @@ impl TryFrom<&str> for MinecraftBlock {
             "minecraft:nether_quartz_block" => MinecraftBlock::NetherQuartzBlock,
             "minecraft:crimson_nylium" => MinecraftBlock::CrimsonNylium,
             "minecraft:warped_nylium" => MinecraftBlock::WarpedNylium,
-            _ => return Err(MinecraftError::InvalidBlockType(value.to_string())),
+            _ => {
+                return Err(MinecraftError::UnknownBlockType(value.to_string()));
+            }
         };
 
         Ok(b)

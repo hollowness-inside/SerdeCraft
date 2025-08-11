@@ -1,27 +1,108 @@
-use std::{net::TcpStream, num::ParseIntError, string::FromUtf8Error};
-
-use tungstenite::{HandshakeError, ServerHandshake, handshake::server::NoCallback};
+use thiserror::Error;
 
 pub type MinecraftResult<T> = Result<T, MinecraftError>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Error)]
 pub enum MinecraftError {
+    // Network and I/O errors
+    #[error("IO error occurred")]
+    Io(#[from] std::io::Error),
+
+    #[error("WebSocket error occurred")]
+    WebSocket(#[from] Box<tungstenite::Error>),
+
+    #[error("Failed to send message over WebSocket: {message}")]
+    WebSocketSend {
+        message: String,
+        #[source]
+        source: Box<tungstenite::Error>,
+    },
+
+    #[error("Failed to receive message from WebSocket: {message}")]
+    WebSocketReceive {
+        message: String,
+        #[source]
+        source: Box<tungstenite::Error>,
+    },
+
+    // Parsing and conversion errors
+    #[error("Failed to parse integer")]
+    ParseInt(#[from] std::num::ParseIntError),
+
+    #[error("Invalid UTF-8 sequence")]
+    InvalidUtf8(#[from] std::string::FromUtf8Error),
+
+    #[error("Invalid hexadecimal string: '{0}'")]
+    InvalidHexString(String),
+
+    #[error("Invalid number format for {0}-bit number")]
+    InvalidNumberFormat(u8),
+
+    // Block-related errors
+    #[error("Unknown Minecraft block type: '{0}'")]
+    UnknownBlockType(String),
+
+    #[error("Block cannot be converted to digit: {0}")]
+    BlockToDigitConversion(String),
+
+    #[error("Invalid block sequence for {0}")]
+    InvalidBlockSequence(String),
+
+    #[error("Expected {expected} block, found {found}")]
+    UnexpectedBlock { expected: String, found: String },
+
+    // Serialization/Deserialization errors
+    #[error("Serialization failed: {0}")]
+    SerializationFailed(String),
+
+    #[error("Deserialization failed: {0}")]
+    DeserializationFailed(String),
+
+    #[error("Float serialization error: cannot serialize f64 value")]
+    FloatSerializationError,
+
+    #[error("Invalid wool sequence detected")]
+    InvalidWoolSequence,
+
+    #[error("Operation '{0}' failed")]
+    OperationFailed(String),
+
+    // Serde protocol errors
+    #[error("Type mismatch: expected '{expected}', found '{found}'")]
+    TypeMismatch { expected: String, found: String },
+
+    #[error("Struct name mismatch: expected '{expected}', found '{found}'")]
+    StructNameMismatch { expected: String, found: String },
+
+    #[error("Invalid enum variant: '{0}'")]
+    InvalidEnumVariant(String),
+
+    #[error("Missing required field: '{0}'")]
+    MissingField(String),
+
+    // Protocol-specific errors
+    #[error("Rewind operation failed")]
+    RewindFailed,
+
+    #[error("Peek operation failed")]
+    PeekFailed,
+
+    #[error("Consume operation failed")]
+    ConsumeFailed,
+
+    #[error("Invalid protocol state")]
+    InvalidProtocolState,
+
+    // Generic error for backward compatibility
+    #[error("{0}")]
     Custom(String),
-    InvalidData(String),
-    SendError(String),
-    RecvError(String),
-    InvalidBlockType(String),
-    Char,
-    NotMatching(String),
 }
 
-impl std::fmt::Display for MinecraftError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Minecraft serialization error")
+impl From<tungstenite::Error> for MinecraftError {
+    fn from(err: tungstenite::Error) -> Self {
+        MinecraftError::WebSocket(Box::new(err))
     }
 }
-
-impl serde::ser::StdError for MinecraftError {}
 
 impl serde::ser::Error for MinecraftError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
@@ -34,40 +115,5 @@ impl serde::de::Error for MinecraftError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
         eprintln!("Deserialization error: {}", msg);
         MinecraftError::Custom(msg.to_string())
-    }
-}
-
-impl From<tungstenite::Error> for MinecraftError {
-    fn from(err: tungstenite::Error) -> Self {
-        eprintln!("WebSocket error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<std::io::Error> for MinecraftError {
-    fn from(err: std::io::Error) -> Self {
-        eprintln!("IO error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<HandshakeError<ServerHandshake<TcpStream, NoCallback>>> for MinecraftError {
-    fn from(err: HandshakeError<ServerHandshake<TcpStream, NoCallback>>) -> Self {
-        eprintln!("Handshake error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<FromUtf8Error> for MinecraftError {
-    fn from(err: FromUtf8Error) -> Self {
-        eprintln!("UTF-8 conversion error: {}", err);
-        MinecraftError::Custom(err.to_string())
-    }
-}
-
-impl From<ParseIntError> for MinecraftError {
-    fn from(err: ParseIntError) -> Self {
-        eprintln!("ParseInt error: {}", err);
-        MinecraftError::Custom(err.to_string())
     }
 }
