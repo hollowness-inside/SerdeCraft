@@ -1,8 +1,7 @@
-use serdecraft::MinecraftDeserializer;
-use std::{net::TcpListener, thread};
-use tungstenite::accept;
-
 use serde::{Deserialize, Serialize};
+use serdecraft::MinecraftDeserializer;
+use std::net::TcpListener;
+use tungstenite::accept;
 
 #[derive(Serialize, Deserialize, Debug)]
 enum Direction {
@@ -30,13 +29,13 @@ struct UserWithProfile {
 fn main() {
     let server = TcpListener::bind("127.0.0.1:8765").unwrap();
     for stream in server.incoming() {
-        thread::spawn(move || {
-            let websocket = accept(stream.unwrap()).unwrap();
-            println!("WebSocket connection established!");
+        let websocket = accept(stream.unwrap()).unwrap();
+        println!("WebSocket connection established!");
 
-            let mut deserializer = MinecraftDeserializer::new(websocket);
-            let x: Direction = Direction::deserialize(&mut deserializer).unwrap();
-            println!("Received user: {:#?}", x);
-        });
+        let mut deserializer = MinecraftDeserializer::new(websocket);
+        match <UserWithProfile>::deserialize(&mut deserializer) {
+            Ok(x) => println!("Received user: {:#?}", x),
+            Err(e) => println!("Failed to deserialize user: {:#?}", e),
+        }
     }
 }

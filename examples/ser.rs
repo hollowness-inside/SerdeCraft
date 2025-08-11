@@ -1,10 +1,10 @@
 use serdecraft::MinecraftSerializer;
-use std::{net::TcpListener, thread};
+use std::net::TcpListener;
 use tungstenite::accept;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 enum Direction {
     North,
     South,
@@ -12,13 +12,13 @@ enum Direction {
     West,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct UserProfile {
     email: String,
     age: u8,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct UserWithProfile {
     id: u32,
     username: String,
@@ -28,13 +28,22 @@ struct UserWithProfile {
 }
 
 fn main() {
+    let v = UserWithProfile {
+        id: 12345,
+        username: "TestUser".to_string(),
+        direction: Direction::North,
+        health: 100.0,
+        profile: UserProfile {
+            email: "testuser@example.com".to_string(),
+            age: 30,
+        },
+    };
+
     let server = TcpListener::bind("127.0.0.1:8765").unwrap();
     for stream in server.incoming() {
-        thread::spawn(move || {
-            let websocket = accept(stream.unwrap()).unwrap();
-            let mut serializer = MinecraftSerializer::new(websocket);
-            Direction::East.serialize(&mut serializer).unwrap();
-        });
+        let websocket = accept(stream.unwrap()).unwrap();
+        let mut serializer = MinecraftSerializer::new(websocket);
+        v.serialize(&mut serializer).unwrap();
     }
 }
 
@@ -47,21 +56,5 @@ fn test_main() {
         "strong consulatation recommended"
             .serialize(&mut serializer)
             .unwrap();
-        // 1i8.serialize(&mut serializer).unwrap();
-        // (false).serialize(&mut serializer).unwrap();
-        // (true).serialize(&mut serializer).unwrap();
-        // (1i8).serialize(&mut serializer).unwrap();
-        // (2u8).serialize(&mut serializer).unwrap();
-        // (3i16).serialize(&mut serializer).unwrap();
-        // (4u16).serialize(&mut serializer).unwrap();
-        // (5i32).serialize(&mut serializer).unwrap();
-        // (6u32).serialize(&mut serializer).unwrap();
-        // (7i64).serialize(&mut serializer).unwrap();
-        // (8u64).serialize(&mut serializer).unwrap();
-        // (-1i8).serialize(&mut serializer).unwrap();
-        // (-2i16).serialize(&mut serializer).unwrap();
-        // (-3i32).serialize(&mut serializer).unwrap();
-        // (-4i64).serialize(&mut serializer).unwrap();
-        // (-5i64).serialize(&mut serializer).unwrap();
     }
 }

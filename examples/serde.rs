@@ -30,20 +30,21 @@ struct UserWithProfile {
 fn main() {
     let mut state = true;
     let server = TcpListener::bind("127.0.0.1:8765").unwrap();
+
+    let v = UserWithProfile {
+        id: 12345,
+        username: "TestUser".to_string(),
+        direction: Direction::North,
+        health: 100.0,
+        profile: UserProfile {
+            email: "testuser@example.com".to_string(),
+            age: 30,
+        },
+    };
+
     for stream in server.incoming() {
         let websocket = accept(stream.unwrap()).unwrap();
         println!("WebSocket connection established!");
-
-        let v = UserWithProfile {
-            id: 12345,
-            username: "TestUser".to_string(),
-            direction: Direction::North,
-            health: 100.0,
-            profile: UserProfile {
-                email: "testuser@example.com".to_string(),
-                age: 30,
-            },
-        };
 
         if state {
             let mut serializer = MinecraftSerializer::new(websocket);
@@ -58,12 +59,4 @@ fn main() {
 
         state = !state;
     }
-}
-
-#[test]
-fn t() {
-    println!(
-        "{:?}",
-        12i32.to_le_bytes().map(|x| format!("{:02x}", x)).join("")
-    );
 }
