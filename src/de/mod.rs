@@ -2,9 +2,16 @@ mod main;
 pub use main::MinecraftDeserializer;
 
 mod r#enum;
-mod r#map;
-mod r#struct;
-mod r#tuple;
+pub(self) use r#enum::MCEnumAccessor;
 
-mod r#variant;
-pub(crate) use r#variant::MCVariantAccessor;
+mod map;
+pub(self) use map::MCMapAccessor;
+
+mod r#struct;
+pub(self) use r#struct::MCStructAccessor;
+
+mod seq;
+pub(self) use seq::MCSeqAccessor;
+
+mod variant;
+pub(self) use variant::MCVariantAccessor;

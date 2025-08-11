@@ -3,7 +3,7 @@ use serde::de::MapAccess;
 use super::MinecraftDeserializer;
 use crate::result::MinecraftError;
 
-pub struct MCStructAccessor<'de> {
+pub(super) struct MCStructAccessor<'de> {
     deserializer: &'de mut MinecraftDeserializer,
     remaining: usize,
 }

@@ -1,9 +1,9 @@
 use serde::de::{EnumAccess, IntoDeserializer, value::StringDeserializer};
 
 use super::{MCVariantAccessor, MinecraftDeserializer};
-use crate::result::MinecraftError;
+use crate::MinecraftError;
 
-pub(crate) struct MCEnumAccessor<'de> {
+pub(super) struct MCEnumAccessor<'de> {
     deserializer: &'de mut MinecraftDeserializer,
     variant_name: String,
 }

@@ -3,7 +3,7 @@ use serde::de::VariantAccess;
 use super::MinecraftDeserializer;
 use crate::result::MinecraftError;
 
-pub struct MCVariantAccessor<'a> {
+pub(super) struct MCVariantAccessor<'a> {
     deserializer: &'a mut MinecraftDeserializer,
 }
 

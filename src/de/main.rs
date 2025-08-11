@@ -5,12 +5,10 @@ use tungstenite::WebSocket;
 
 use crate::{
     blocks::MinecraftBlock,
-    de::{
-        r#enum::MCEnumAccessor, map::MCMapAccessor, r#struct::MCStructAccessor,
-        tuple::MCTupleAccessor,
-    },
     result::{MinecraftError, MinecraftResult},
 };
+
+use super::{MCEnumAccessor, MCMapAccessor, MCSeqAccessor, MCStructAccessor};
 
 pub struct MinecraftDeserializer {
     socket: WebSocket<TcpStream>,
@@ -42,7 +40,7 @@ impl<'a> MinecraftDeserializer {
         text.try_into()
     }
 
-    fn rewind(&mut self) -> MinecraftResult<()> {
+    pub(super) fn rewind(&mut self) -> MinecraftResult<()> {
         self.socket
             .write(tungstenite::Message::Text("rewind".into()))?;
         self.socket.flush()?;
@@ -456,7 +454,14 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        todo!()
+        let b1 = self.consume()?;
+        let b2 = self.consume()?;
+        match (b1, b2) {
+            (MinecraftBlock::Obsidian, MinecraftBlock::Bricks) => {
+                visitor.visit_seq(MCSeqAccessor::new(self))
+            }
+            _ => Err(MinecraftError::Custom("Expected seq".to_string())),
+        }
     }
 
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
@@ -467,7 +472,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b2 = self.consume()?;
         match (b1, b2) {
             (MinecraftBlock::Obsidian, MinecraftBlock::Glass) => {
-                visitor.visit_seq(MCTupleAccessor::new(self))
+                visitor.visit_seq(MCSeqAccessor::new(self))
             }
             _ => Err(MinecraftError::Custom("Expected tuple".to_string())),
         }

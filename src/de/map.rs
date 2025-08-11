@@ -3,7 +3,7 @@ use serde::de::MapAccess;
 use super::MinecraftDeserializer;
 use crate::result::MinecraftError;
 
-pub struct MCMapAccessor<'de> {
+pub(super) struct MCMapAccessor<'de> {
     deserializer: &'de mut MinecraftDeserializer,
 }
 
