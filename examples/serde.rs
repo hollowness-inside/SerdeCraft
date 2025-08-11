@@ -52,7 +52,13 @@ fn main() -> MinecraftResult<()> {
             }
         };
 
-        let text = message.to_text()?;
+        let text = match message.to_text() {
+            Ok(text) => text,
+            Err(_) => {
+                eprintln!("Failed to convert message to text");
+                continue;
+            }
+        };
 
         match text {
             "ser" => {
