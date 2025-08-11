@@ -42,6 +42,19 @@ impl<'a> MinecraftDeserializer {
         text.try_into()
     }
 
+    fn rewind(&mut self) -> MinecraftResult<()> {
+        self.socket
+            .write(tungstenite::Message::Text("rewind".into()))?;
+        self.socket.flush()?;
+
+        let response = self.socket.read()?;
+        let text = response.to_text()?;
+        match text == "done" {
+            true => Ok(()),
+            false => Err(MinecraftError::Custom("Rewind failed".to_string())),
+        }
+    }
+
     fn parse_number(&mut self, bits: u8) -> MinecraftResult<i64> {
         let n = bits as usize / 4; // Each hex char represents 4 bits
 
@@ -74,12 +87,12 @@ impl<'a> MinecraftDeserializer {
         let mut digits = Vec::new();
 
         loop {
-            let block = self.peek()?;
+            let block = self.consume()?;
             if block.is_log() {
-                self.consume()?;
                 let chr = block.to_digit().ok_or(MinecraftError::Char)?;
                 digits.push(chr);
             } else {
+                self.rewind()?;
                 break;
             }
         }
@@ -110,19 +123,21 @@ impl<'a> MinecraftDeserializer {
         let mut mem = None;
 
         loop {
-            let block = self.peek()?;
+            let block = self.consume()?;
             match (block.is_wool(), mem) {
                 (true, None) => {
-                    self.consume()?;
                     mem = Some(block);
                 }
                 (true, Some(prev)) => {
-                    self.consume()?;
                     let byte = self.u8_from_blocks(&[prev, block])?;
                     bytes.push(byte);
                     mem = None;
                 }
-                (false, None) => break,
+                (false, None) => {
+                    // Rewind the non-wool block since we don't need it
+                    self.rewind()?;
+                    break;
+                }
                 (false, Some(_)) => {
                     return Err(MinecraftError::Custom("Invalid wool sequence".to_string()));
                 }
@@ -191,16 +206,21 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.peek()? {
+        let block = self.consume()?;
+        match block {
             MinecraftBlock::Glowstone | MinecraftBlock::RedstoneLamp => {
+                self.rewind()?;
                 self.deserialize_bool(visitor)
             }
-            MinecraftBlock::Obsidian => {
-                self.consume()?;
-                self.handle_obsidian(visitor)
+            MinecraftBlock::Obsidian => self.handle_obsidian(visitor),
+            b if b.is_log() => {
+                self.rewind()?;
+                visitor.visit_f64(self.parse_f64()?)
             }
-            b if b.is_log() => visitor.visit_f64(self.parse_f64()?),
-            b if b.is_wool() => self.deserialize_bytes(visitor),
+            b if b.is_wool() => {
+                self.rewind()?;
+                self.deserialize_bytes(visitor)
+            }
             _ => Err(MinecraftError::Custom("Unknown type".to_string())),
         }
     }
@@ -396,15 +416,9 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.peek()? {
-            MinecraftBlock::Bedrock => {
-                self.consume()?;
-                visitor.visit_none()
-            }
-            MinecraftBlock::RedstoneBlock => {
-                self.consume()?;
-                visitor.visit_some(self)
-            }
+        match self.consume()? {
+            MinecraftBlock::Bedrock => visitor.visit_none(),
+            MinecraftBlock::RedstoneBlock => visitor.visit_some(self),
             _ => Err(MinecraftError::Custom("Expected option".to_string())),
         }
     }
