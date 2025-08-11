@@ -394,7 +394,23 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn to_char(&self) -> Option<char> {
+    pub fn is_log(&self) -> bool {
+        matches!(
+            self,
+            MinecraftBlock::CherryLog
+                | MinecraftBlock::BambooLog
+                | MinecraftBlock::BirchLog
+                | MinecraftBlock::OakLog
+                | MinecraftBlock::JungleLog
+                | MinecraftBlock::AcaciaLog
+                | MinecraftBlock::SpruceLog
+                | MinecraftBlock::DarkOakLog
+                | MinecraftBlock::CrimsonLog
+                | MinecraftBlock::WarpedLog
+        )
+    }
+
+    pub fn to_digit(&self) -> Option<char> {
         let c = match self {
             MinecraftBlock::CherryLog => '0',
             MinecraftBlock::BambooLog => '1',

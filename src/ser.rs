@@ -235,12 +235,25 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        let blocks: Vec<_> = v
-            .to_bits()
-            .to_le_bytes()
-            .into_iter()
-            .flat_map(MinecraftSerializer::u8_to_glass)
-            .collect();
+        let mut blocks = Vec::new();
+        let mut bits = v.to_bits();
+        while bits > 10 {
+            let rem = bits % 10;
+            let block = MinecraftSerializer::u8_to_logs(rem as u8);
+            if block.len() != 1 {
+                return Err(MinecraftError::Custom("Couldn't serialize f64".to_string()));
+            }
+            blocks.push(block[0]);
+            bits /= 10;
+        }
+        let rem = bits % 10;
+        let block = MinecraftSerializer::u8_to_logs(rem as u8);
+        if block.len() != 1 {
+            return Err(MinecraftError::Custom("Couldn't serialize f64".to_string()));
+        }
+        blocks.push(block[0]);
+
+        blocks.reverse();
 
         self.place_blocks(&blocks)
     }

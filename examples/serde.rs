@@ -50,7 +50,7 @@ fn main() {
             let _ = v.serialize(&mut serializer).unwrap();
         } else {
             let mut deserializer = MinecraftDeserializer::new(websocket);
-            match <UserProfile>::deserialize(&mut deserializer) {
+            match <UserWithProfile>::deserialize(&mut deserializer) {
                 Ok(x) => println!("Received user: {:#?}", x),
                 Err(e) => println!("Failed to deserialize user: {:#?}", e),
             }

@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 
-use serde::Deserialize;
+use serde::{Deserialize, de::Visitor};
 use tungstenite::WebSocket;
 
 use crate::{
@@ -16,7 +16,7 @@ pub struct MinecraftDeserializer {
     socket: WebSocket<TcpStream>,
 }
 
-impl MinecraftDeserializer {
+impl<'a> MinecraftDeserializer {
     pub fn new(socket: WebSocket<TcpStream>) -> Self {
         MinecraftDeserializer { socket }
     }
@@ -43,12 +43,12 @@ impl MinecraftDeserializer {
     }
 
     fn parse_number(&mut self, bits: u8) -> MinecraftResult<i64> {
-        let n = bits as usize / 4;
+        let n = bits as usize / 4; // Each hex char represents 4 bits
 
-        let mut array = ['0'; 16];
+        let mut array = vec!['0'; n];
         for item in array.iter_mut() {
             let block = self.consume()?;
-            let chr = block.to_char().ok_or(MinecraftError::Char)?;
+            let chr = block.to_digit().ok_or(MinecraftError::Char)?;
             *item = chr;
         }
 
@@ -58,53 +58,49 @@ impl MinecraftDeserializer {
             .flat_map(|x| u8::from_str_radix(&x, 16))
             .collect();
 
-        let bits: [u8; 8] = bits
-            .try_into()
-            .map_err(|_| MinecraftError::Custom("Invalid number of bits".to_string()))?;
+        // Pad with zeros to make it 8 bytes for i64
+        let mut padded_bits = [0u8; 8];
+        for (i, &byte) in bits.iter().enumerate() {
+            if i < 8 {
+                padded_bits[i] = byte;
+            }
+        }
 
-        let bits = i64::from_le_bytes(bits);
+        let bits = i64::from_le_bytes(padded_bits);
         Ok(bits)
     }
 
     fn parse_f64(&mut self) -> MinecraftResult<f64> {
-        let mut chars = Vec::new();
+        let mut digits = Vec::new();
 
         loop {
             let block = self.peek()?;
-            if block.is_glass() {
+            if block.is_log() {
                 self.consume()?;
-                let chr = block.to_char().ok_or(MinecraftError::Char)?;
-                chars.push(chr);
+                let chr = block.to_digit().ok_or(MinecraftError::Char)?;
+                digits.push(chr);
             } else {
                 break;
             }
         }
 
-        let bits = chars
-            .chunks_exact(2)
-            .map(|c| format!("{}{}", c[0], c[1]))
-            .flat_map(|x| u8::from_str_radix(&x, 16))
-            .collect::<Vec<_>>();
-
-        let value = f64::from_le_bytes(
-            bits.try_into()
-                .map_err(|_| MinecraftError::Custom("Invalid f64".to_string()))?,
-        );
-
+        let uvs = digits.iter().collect::<String>();
+        let bits: u64 = uvs.parse()?;
+        let value = f64::from_bits(bits);
         Ok(value)
     }
 
     fn parse_u8(&mut self) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
-        src.push(self.consume()?.to_char().ok_or(MinecraftError::Char)?);
-        src.push(self.consume()?.to_char().ok_or(MinecraftError::Char)?);
+        src.push(self.consume()?.to_digit().ok_or(MinecraftError::Char)?);
+        src.push(self.consume()?.to_digit().ok_or(MinecraftError::Char)?);
         Ok(u8::from_str_radix(&src, 16)?)
     }
 
     fn u8_from_blocks(&mut self, blocks: &[MinecraftBlock]) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
-        src.push(blocks[0].to_char().ok_or(MinecraftError::Char)?);
-        src.push(blocks[1].to_char().ok_or(MinecraftError::Char)?);
+        src.push(blocks[0].to_digit().ok_or(MinecraftError::Char)?);
+        src.push(blocks[1].to_digit().ok_or(MinecraftError::Char)?);
         u8::from_str_radix(&src, 16).map_err(|_| MinecraftError::Custom("Invalid u8".to_string()))
     }
 
@@ -135,6 +131,57 @@ impl MinecraftDeserializer {
 
         Ok(bytes)
     }
+
+    fn parse_struct_sophisticated<V: Visitor<'a>>(
+        &mut self,
+        name: &'static str,
+        fields: &'static [&'static str],
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        let name_actual = String::deserialize(&mut *self)?;
+        if name_actual != name {
+            return Err(MinecraftError::NotMatching(format!(
+                "Expected struct name '{}', found '{}'",
+                name, name_actual
+            )));
+        }
+
+        let len = usize::deserialize(&mut *self)?;
+        visitor.visit_map(MCStructAccessor::new(self, len))
+    }
+
+    fn parse_struct<V: Visitor<'a>>(
+        &mut self,
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        let _name = String::deserialize(&mut *self)?;
+        let len = usize::deserialize(&mut *self)?;
+        visitor.visit_map(MCStructAccessor::new(self, len))
+    }
+
+    fn parse_seq<V: Visitor<'a>>(
+        &mut self,
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        let _enum_name = String::deserialize(&mut *self)?;
+        let _variant_index = u32::deserialize(&mut *self)?;
+        let variant_name = String::deserialize(&mut *self)?;
+        visitor.visit_enum(MCEnumAccessor::new(self, variant_name))
+    }
+
+    fn handle_obsidian<V>(&mut self, visitor: V) -> MinecraftResult<<V as Visitor<'a>>::Value>
+    where
+        V: Visitor<'a>,
+    {
+        match self.consume()? {
+            MinecraftBlock::Obsidian => visitor.visit_map(MCMapAccessor::new(self)),
+            MinecraftBlock::QuartzBlock => self.parse_struct(visitor),
+            MinecraftBlock::Cobblestone => self.parse_seq(visitor),
+            _ => Err(MinecraftError::Custom(
+                "Unexpected Obsidian Sequence".to_string(),
+            )),
+        }
+    }
 }
 
 impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
@@ -148,6 +195,12 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             MinecraftBlock::Glowstone | MinecraftBlock::RedstoneLamp => {
                 self.deserialize_bool(visitor)
             }
+            MinecraftBlock::Obsidian => {
+                self.consume()?;
+                self.handle_obsidian(visitor)
+            }
+            b if b.is_log() => visitor.visit_f64(self.parse_f64()?),
+            b if b.is_wool() => self.deserialize_bytes(visitor),
             _ => Err(MinecraftError::Custom("Unknown type".to_string())),
         }
     }
@@ -343,7 +396,17 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        todo!()
+        match self.peek()? {
+            MinecraftBlock::Bedrock => {
+                self.consume()?;
+                visitor.visit_none()
+            }
+            MinecraftBlock::RedstoneBlock => {
+                self.consume()?;
+                visitor.visit_some(self)
+            }
+            _ => Err(MinecraftError::Custom("Expected option".to_string())),
+        }
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -435,16 +498,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b2 = self.consume()?;
         match (b1, b2) {
             (MinecraftBlock::Obsidian, MinecraftBlock::QuartzBlock) => {
-                let name_actual = String::deserialize(&mut *self)?;
-                if name_actual != name {
-                    return Err(MinecraftError::NotMatching(format!(
-                        "Expected struct name '{}', found '{}'",
-                        name, name_actual
-                    )));
-                }
-
-                let len = usize::deserialize(&mut *self)?;
-                visitor.visit_map(MCStructAccessor::new(self, len))
+                self.parse_struct_sophisticated(name, fields, visitor)
             }
             _ => Err(MinecraftError::Custom("Expected struct".to_string())),
         }
@@ -462,12 +516,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b1 = self.consume()?;
         let b2 = self.consume()?;
         match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::Cobblestone) => {
-                let _enum_name = String::deserialize(&mut *self)?;
-                let _variant_index = u32::deserialize(&mut *self)?;
-                let variant_name = String::deserialize(&mut *self)?;
-                visitor.visit_enum(MCEnumAccessor::new(self, variant_name))
-            }
+            (MinecraftBlock::Obsidian, MinecraftBlock::Cobblestone) => self.parse_seq(visitor),
             _ => Err(MinecraftError::Custom("Expected enum".to_string())),
         }
     }
@@ -483,6 +532,6 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        todo!()
+        self.deserialize_any(visitor)
     }
 }
