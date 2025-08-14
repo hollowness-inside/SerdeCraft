@@ -98,11 +98,11 @@ impl<'a> MinecraftDeserializer {
         Ok(u8::from_str_radix(&src, 16)?)
     }
 
-    fn u8_from_blocks(&mut self, blocks: &[MinecraftBlock]) -> MinecraftResult<u8> {
+    fn u8_from_blocks(block_1: MinecraftBlock, block_2: MinecraftBlock) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
-        src.push(blocks[0].to_digit()?);
-        src.push(blocks[1].to_digit()?);
-        u8::from_str_radix(&src, 16).map_err(|_| MinecraftError::InvalidHexString(src))
+        src.push(block_1.to_digit()?);
+        src.push(block_2.to_digit()?);
+        Ok(u8::from_str_radix(&src, 16)?)
     }
 
     // Consecutive blocks of wool
@@ -117,7 +117,7 @@ impl<'a> MinecraftDeserializer {
                     mem = Some(block);
                 }
                 (true, Some(prev)) => {
-                    let byte = self.u8_from_blocks(&[prev, block])?;
+                    let byte = Self::u8_from_blocks(prev, block)?;
                     bytes.push(byte);
                     mem = None;
                 }
