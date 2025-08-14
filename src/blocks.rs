@@ -241,20 +241,22 @@ impl MinecraftBlock {
     }
 
     pub fn to_digit(&self) -> Option<char> {
+        println!("{self} {}", self.is_wool());
+
         let a = *self as u8;
         let b = if self.is_glass() {
-            MinecraftBlock::WhiteGlass as u8
+            MinecraftBlock::WhiteGlass
         } else if self.is_log() {
-            MinecraftBlock::CherryLog as u8
+            MinecraftBlock::CherryLog
         } else if self.is_terracotta() {
-            MinecraftBlock::WhiteTerracotta as u8
+            MinecraftBlock::WhiteTerracotta
         } else if self.is_wool() {
-            MinecraftBlock::WhiteWool as u8
+            MinecraftBlock::WhiteWool
         } else if self.is_planks() {
-            MinecraftBlock::CherryPlanks as u8
+            MinecraftBlock::CherryPlanks
         } else {
             return None;
-        };
+        } as u8;
 
         char::from_digit((b - a) as u32, 16)
     }
