@@ -57,13 +57,12 @@ impl MinecraftSerializer {
             self.place_block(MinecraftBlock::Bricks)?
         }
 
-        let bytes = v.to_le_bytes();
-        let blocks: Vec<_> = bytes
+        v.to_le_bytes()
             .into_iter()
             .take(bits / 8)
             .flat_map(MinecraftBlock::u8_to_terracotta)
-            .collect();
-        self.place_blocks(&blocks)
+            .map(|block| self.place_block(block))
+            .collect()
     }
 }
 
