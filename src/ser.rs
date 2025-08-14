@@ -78,6 +78,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     type SerializeStruct = Self;
     type SerializeStructVariant = Self;
 
+    #[inline(always)]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         let block = match v {
             true => MinecraftBlock::Glowstone,
@@ -87,38 +88,47 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         self.place_block(block)
     }
 
+    #[inline(always)]
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v as u64, 8, true)
     }
 
+    #[inline(always)]
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v as u64, 16, true)
     }
 
+    #[inline(always)]
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v as u64, 32, true)
     }
 
+    #[inline(always)]
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v as u64, 64, true)
     }
 
+    #[inline(always)]
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v as u64, 8, false)
     }
 
+    #[inline(always)]
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v as u64, 16, false)
     }
 
+    #[inline(always)]
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v as u64, 32, false)
     }
 
+    #[inline(always)]
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
         self.serialize_number(v, 64, false)
     }
 
+    #[inline(always)]
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
         self.serialize_f64(v as f64)
     }
@@ -156,10 +166,12 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         self.place_blocks(&blocks)
     }
 
+    #[inline(always)]
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
         self.place_block(MinecraftBlock::Bedrock)
     }
 
+    #[inline(always)]
     fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
         T: ?Sized + serde::Serialize,
@@ -213,12 +225,14 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         todo!()
     }
 
+    #[inline(always)]
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         self.place_block(MinecraftBlock::Obsidian)?;
         self.place_block(MinecraftBlock::Bricks)?;
         Ok(self)
     }
 
+    #[inline(always)]
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
         self.place_block(MinecraftBlock::Obsidian)?;
         self.place_block(MinecraftBlock::Glass)?;
@@ -243,6 +257,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         todo!()
     }
 
+    #[inline(always)]
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         self.place_block(MinecraftBlock::Obsidian)?;
         self.place_block(MinecraftBlock::Obsidian)?;
@@ -276,6 +291,7 @@ impl serde::ser::SerializeSeq for &mut MinecraftSerializer {
     type Ok = ();
     type Error = MinecraftError;
 
+    #[inline(always)]
     fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
@@ -283,6 +299,7 @@ impl serde::ser::SerializeSeq for &mut MinecraftSerializer {
         value.serialize(&mut **self)
     }
 
+    #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
@@ -292,6 +309,7 @@ impl serde::ser::SerializeTuple for &mut MinecraftSerializer {
     type Ok = ();
     type Error = MinecraftError;
 
+    #[inline(always)]
     fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
@@ -299,6 +317,7 @@ impl serde::ser::SerializeTuple for &mut MinecraftSerializer {
         value.serialize(&mut **self)
     }
 
+    #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
@@ -340,14 +359,15 @@ impl serde::ser::SerializeMap for &mut MinecraftSerializer {
     type Ok = ();
     type Error = MinecraftError;
 
+    #[inline(always)]
     fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        key.serialize(&mut **self)?;
-        Ok(())
+        key.serialize(&mut **self)
     }
 
+    #[inline(always)]
     fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
@@ -355,6 +375,7 @@ impl serde::ser::SerializeMap for &mut MinecraftSerializer {
         value.serialize(&mut **self)
     }
 
+    #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
@@ -364,15 +385,16 @@ impl serde::ser::SerializeStruct for &mut MinecraftSerializer {
     type Ok = ();
     type Error = MinecraftError;
 
+    #[inline(always)]
     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
         key.serialize(&mut **self)?;
-        value.serialize(&mut **self)?;
-        Ok(())
+        value.serialize(&mut **self)
     }
 
+    #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
