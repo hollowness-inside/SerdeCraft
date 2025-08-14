@@ -19,16 +19,6 @@ impl<'a> MinecraftDeserializer {
         MinecraftDeserializer { socket }
     }
 
-    fn peek(&mut self) -> MinecraftResult<MinecraftBlock> {
-        self.socket
-            .write(tungstenite::Message::Text("peek".into()))?;
-        self.socket.flush()?;
-
-        let response = self.socket.read()?;
-        let text = response.to_text()?;
-        text.try_into()
-    }
-
     fn consume(&mut self) -> MinecraftResult<MinecraftBlock> {
         self.socket
             .write(tungstenite::Message::Text("consume".into()))?;
