@@ -108,25 +108,6 @@ impl MinecraftSerializer {
             .collect()
     }
 
-    fn u64_to_planks(v: u64) -> Vec<MinecraftBlock> {
-        v.to_string()
-            .chars()
-            .map(|digit| match digit {
-                '0' => MinecraftBlock::CherryPlanks,
-                '1' => MinecraftBlock::BambooPlanks,
-                '2' => MinecraftBlock::BirchPlanks,
-                '3' => MinecraftBlock::OakPlanks,
-                '4' => MinecraftBlock::JunglePlanks,
-                '5' => MinecraftBlock::AcaciaPlanks,
-                '6' => MinecraftBlock::SprucePlanks,
-                '7' => MinecraftBlock::DarkOakPlanks,
-                '8' => MinecraftBlock::CrimsonPlanks,
-                '9' => MinecraftBlock::WarpedPlanks,
-                _ => unreachable!(),
-            })
-            .collect()
-    }
-
     fn bool_to_block(v: bool) -> MinecraftBlock {
         match v {
             true => MinecraftBlock::Glowstone,
