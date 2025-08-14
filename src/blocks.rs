@@ -142,7 +142,7 @@ block_enum!({
 });
 
 impl MinecraftBlock {
-    pub fn is_glass(&self) -> bool {
+    pub const fn is_glass(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::WhiteGlass
@@ -164,7 +164,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn is_wool(&self) -> bool {
+    pub const fn is_wool(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::WhiteWool
@@ -186,7 +186,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn is_log(&self) -> bool {
+    pub const fn is_log(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::CherryLog
@@ -202,84 +202,60 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn to_digit(&self) -> Option<char> {
-        let c = match self {
-            MinecraftBlock::CherryLog => '0',
-            MinecraftBlock::BambooLog => '1',
-            MinecraftBlock::BirchLog => '2',
-            MinecraftBlock::OakLog => '3',
-            MinecraftBlock::JungleLog => '4',
-            MinecraftBlock::AcaciaLog => '5',
-            MinecraftBlock::SpruceLog => '6',
-            MinecraftBlock::DarkOakLog => '7',
-            MinecraftBlock::CrimsonLog => '8',
-            MinecraftBlock::WarpedLog => '9',
+    pub const fn is_terracotta(&self) -> bool {
+        matches!(
+            self,
+            MinecraftBlock::WhiteTerracotta
+                | MinecraftBlock::LightGrayTerracotta
+                | MinecraftBlock::GrayTerracotta
+                | MinecraftBlock::BlackTerracotta
+                | MinecraftBlock::BrownTerracotta
+                | MinecraftBlock::RedTerracotta
+                | MinecraftBlock::OrangeTerracotta
+                | MinecraftBlock::YellowTerracotta
+                | MinecraftBlock::LimeTerracotta
+                | MinecraftBlock::GreenTerracotta
+                | MinecraftBlock::CyanTerracotta
+                | MinecraftBlock::LightBlueTerracotta
+                | MinecraftBlock::BlueTerracotta
+                | MinecraftBlock::PurpleTerracotta
+                | MinecraftBlock::MagentaTerracotta
+                | MinecraftBlock::PinkTerracotta
+        )
+    }
 
-            MinecraftBlock::WhiteTerracotta => '0',
-            MinecraftBlock::LightGrayTerracotta => '1',
-            MinecraftBlock::GrayTerracotta => '2',
-            MinecraftBlock::BlackTerracotta => '3',
-            MinecraftBlock::BrownTerracotta => '4',
-            MinecraftBlock::RedTerracotta => '5',
-            MinecraftBlock::OrangeTerracotta => '6',
-            MinecraftBlock::YellowTerracotta => '7',
-            MinecraftBlock::LimeTerracotta => '8',
-            MinecraftBlock::GreenTerracotta => '9',
-            MinecraftBlock::CyanTerracotta => 'A',
-            MinecraftBlock::LightBlueTerracotta => 'B',
-            MinecraftBlock::BlueTerracotta => 'C',
-            MinecraftBlock::PurpleTerracotta => 'D',
-            MinecraftBlock::MagentaTerracotta => 'E',
-            MinecraftBlock::PinkTerracotta => 'F',
+    pub const fn is_planks(&self) -> bool {
+        matches!(
+            self,
+            MinecraftBlock::CherryPlanks
+                | MinecraftBlock::BambooPlanks
+                | MinecraftBlock::BirchPlanks
+                | MinecraftBlock::OakPlanks
+                | MinecraftBlock::JunglePlanks
+                | MinecraftBlock::AcaciaPlanks
+                | MinecraftBlock::SprucePlanks
+                | MinecraftBlock::DarkOakPlanks
+                | MinecraftBlock::CrimsonPlanks
+                | MinecraftBlock::WarpedPlanks
+        )
+    }
 
-            MinecraftBlock::WhiteGlass => '0',
-            MinecraftBlock::LightGrayGlass => '1',
-            MinecraftBlock::GrayGlass => '2',
-            MinecraftBlock::BlackGlass => '3',
-            MinecraftBlock::BrownGlass => '4',
-            MinecraftBlock::RedGlass => '5',
-            MinecraftBlock::OrangeGlass => '6',
-            MinecraftBlock::YellowGlass => '7',
-            MinecraftBlock::LimeGlass => '8',
-            MinecraftBlock::GreenGlass => '9',
-            MinecraftBlock::CyanGlass => 'A',
-            MinecraftBlock::LightBlueGlass => 'B',
-            MinecraftBlock::BlueGlass => 'C',
-            MinecraftBlock::PurpleGlass => 'D',
-            MinecraftBlock::MagentaGlass => 'E',
-            MinecraftBlock::PinkGlass => 'F',
+    pub const fn to_digit(&self) -> Option<char> {
+        let a = *self as u8;
+        let b = if self.is_glass() {
+            MinecraftBlock::WhiteGlass
+        } else if self.is_log() {
+            MinecraftBlock::CherryLog
+        } else if self.is_terracotta() {
+            MinecraftBlock::WhiteTerracotta
+        } else if self.is_wool() {
+            MinecraftBlock::WhiteWool
+        } else if self.is_planks() {
+            MinecraftBlock::CherryPlanks
+        } else {
+            return None;
+        } as u8;
 
-            MinecraftBlock::WhiteWool => '0',
-            MinecraftBlock::LightGrayWool => '1',
-            MinecraftBlock::GrayWool => '2',
-            MinecraftBlock::BlackWool => '3',
-            MinecraftBlock::BrownWool => '4',
-            MinecraftBlock::RedWool => '5',
-            MinecraftBlock::OrangeWool => '6',
-            MinecraftBlock::YellowWool => '7',
-            MinecraftBlock::LimeWool => '8',
-            MinecraftBlock::GreenWool => '9',
-            MinecraftBlock::CyanWool => 'A',
-            MinecraftBlock::LightBlueWool => 'B',
-            MinecraftBlock::BlueWool => 'C',
-            MinecraftBlock::PurpleWool => 'D',
-            MinecraftBlock::MagentaWool => 'E',
-            MinecraftBlock::PinkWool => 'F',
-
-            MinecraftBlock::CherryPlanks => '0',
-            MinecraftBlock::BambooPlanks => '1',
-            MinecraftBlock::BirchPlanks => '2',
-            MinecraftBlock::OakPlanks => '3',
-            MinecraftBlock::JunglePlanks => '4',
-            MinecraftBlock::AcaciaPlanks => '5',
-            MinecraftBlock::SprucePlanks => '6',
-            MinecraftBlock::DarkOakPlanks => '7',
-            MinecraftBlock::CrimsonPlanks => '8',
-            MinecraftBlock::WarpedPlanks => '9',
-
-            _ => return None,
-        };
-
-        Some(c)
+        char::from_digit((a - b) as u32, 16)
     }
 }
