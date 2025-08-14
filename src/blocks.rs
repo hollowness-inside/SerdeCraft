@@ -1,4 +1,4 @@
-use crate::result::MinecraftError;
+use crate::{MinecraftResult, result::MinecraftError};
 
 macro_rules! block_enum {
     ({
@@ -240,7 +240,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub const fn to_digit(&self) -> Option<char> {
+    pub const fn to_digit(&self) -> MinecraftResult<char> {
         let a = *self as u8;
         let b = if self.is_glass() {
             MinecraftBlock::WhiteGlass
@@ -253,10 +253,13 @@ impl MinecraftBlock {
         } else if self.is_planks() {
             MinecraftBlock::CherryPlanks
         } else {
-            return None;
+            return Err(MinecraftError::NotDigitBlock(*self));
         } as u8;
 
-        char::from_digit((a - b) as u32, 16)
+        match char::from_digit((a - b) as u32, 16) {
+            Some(v) => Ok(v),
+            None => Err(MinecraftError::FromDigit),
+        }
     }
 
     pub const fn dec_digit_to_log(decimal_digit: u8) -> MinecraftBlock {

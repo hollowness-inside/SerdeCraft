@@ -49,9 +49,7 @@ impl<'a> MinecraftDeserializer {
         let mut array = vec!['0'; n];
         for item in array.iter_mut() {
             let block = self.consume()?;
-            let chr = block
-                .to_digit()
-                .ok_or_else(|| MinecraftError::BlockToDigitConversion(block.to_string()))?;
+            let chr = block.to_digit()?;
             *item = chr;
         }
 
@@ -79,9 +77,7 @@ impl<'a> MinecraftDeserializer {
         loop {
             let block = self.consume()?;
             if block.is_log() {
-                let chr = block
-                    .to_digit()
-                    .ok_or_else(|| MinecraftError::BlockToDigitConversion(block.to_string()))?;
+                let chr = block.to_digit()?;
                 digits.push(chr);
             } else {
                 self.rewind()?;
@@ -97,27 +93,15 @@ impl<'a> MinecraftDeserializer {
 
     fn parse_u8(&mut self) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
-        src.push(self.consume()?.to_digit().ok_or_else(|| {
-            MinecraftError::BlockToDigitConversion("first u8 digit block".to_string())
-        })?);
-        src.push(self.consume()?.to_digit().ok_or_else(|| {
-            MinecraftError::BlockToDigitConversion("second u8 digit block".to_string())
-        })?);
+        src.push(self.consume()?.to_digit()?);
+        src.push(self.consume()?.to_digit()?);
         Ok(u8::from_str_radix(&src, 16)?)
     }
 
     fn u8_from_blocks(&mut self, blocks: &[MinecraftBlock]) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
-        src.push(
-            blocks[0]
-                .to_digit()
-                .ok_or_else(|| MinecraftError::BlockToDigitConversion(blocks[0].to_string()))?,
-        );
-        src.push(
-            blocks[1]
-                .to_digit()
-                .ok_or_else(|| MinecraftError::BlockToDigitConversion(blocks[1].to_string()))?,
-        );
+        src.push(blocks[0].to_digit()?);
+        src.push(blocks[1].to_digit()?);
         u8::from_str_radix(&src, 16).map_err(|_| MinecraftError::InvalidHexString(src))
     }
 

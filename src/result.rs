@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::MinecraftBlock;
+
 pub type MinecraftResult<T> = Result<T, MinecraftError>;
 
 #[derive(Debug, Error)]
@@ -29,6 +31,9 @@ pub enum MinecraftError {
     #[error("Failed to parse integer")]
     ParseInt(#[from] std::num::ParseIntError),
 
+    #[error("Failed to convert block to digit")]
+    FromDigit,
+
     #[error("Invalid UTF-8 sequence")]
     InvalidUtf8(#[from] std::string::FromUtf8Error),
 
@@ -50,6 +55,9 @@ pub enum MinecraftError {
 
     #[error("Expected {expected} block, found {found}")]
     UnexpectedBlock { expected: String, found: String },
+
+    #[error("Expected a digit block, found {0}")]
+    NotDigitBlock(MinecraftBlock),
 
     // Serialization/Deserialization errors
     #[error("Serialization failed: {0}")]
