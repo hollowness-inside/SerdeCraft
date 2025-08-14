@@ -19,16 +19,6 @@ impl<'a> MinecraftDeserializer {
         MinecraftDeserializer { socket }
     }
 
-    fn peek(&mut self) -> MinecraftResult<MinecraftBlock> {
-        self.socket
-            .write(tungstenite::Message::Text("peek".into()))?;
-        self.socket.flush()?;
-
-        let response = self.socket.read()?;
-        let text = response.to_text()?;
-        text.try_into()
-    }
-
     fn consume(&mut self) -> MinecraftResult<MinecraftBlock> {
         self.socket
             .write(tungstenite::Message::Text("consume".into()))?;
@@ -164,7 +154,7 @@ impl<'a> MinecraftDeserializer {
     fn parse_struct_sophisticated<V: Visitor<'a>>(
         &mut self,
         name: &'static str,
-        fields: &'static [&'static str],
+        _fields: &'static [&'static str],
         visitor: V,
     ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
         let name_actual = String::deserialize(&mut *self)?;
@@ -476,7 +466,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         }
     }
 
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
@@ -485,8 +475,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
 
     fn deserialize_unit_struct<V>(
         self,
-        name: &'static str,
-        visitor: V,
+        _name: &'static str,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
@@ -496,8 +486,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
 
     fn deserialize_newtype_struct<V>(
         self,
-        name: &'static str,
-        visitor: V,
+        _name: &'static str,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
@@ -519,7 +509,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         }
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
@@ -538,9 +528,9 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
 
     fn deserialize_tuple_struct<V>(
         self,
-        name: &'static str,
-        len: usize,
-        visitor: V,
+        _name: &'static str,
+        _len: usize,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
@@ -589,8 +579,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
 
     fn deserialize_enum<V>(
         self,
-        name: &'static str,
-        variants: &'static [&'static str],
+        _name: &'static str,
+        _variants: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
