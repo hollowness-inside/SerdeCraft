@@ -39,22 +39,6 @@ impl MinecraftSerializer {
         Ok(())
     }
 
-    fn u8_to_log(v: u8) -> MinecraftBlock {
-        match v {
-            0 => MinecraftBlock::CherryLog,
-            1 => MinecraftBlock::BambooLog,
-            2 => MinecraftBlock::BirchLog,
-            3 => MinecraftBlock::OakLog,
-            4 => MinecraftBlock::JungleLog,
-            5 => MinecraftBlock::AcaciaLog,
-            6 => MinecraftBlock::SpruceLog,
-            7 => MinecraftBlock::DarkOakLog,
-            8 => MinecraftBlock::CrimsonLog,
-            9 => MinecraftBlock::WarpedLog,
-            _ => unreachable!(),
-        }
-    }
-
     fn u8_to_terracotta(v: u8) -> Vec<MinecraftBlock> {
         format!("{:02X}", v)
             .chars()
@@ -198,7 +182,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         let mut bits = v.to_bits();
         while bits > 10 {
             let rem = bits % 10;
-            let block = MinecraftSerializer::u8_to_log(rem as u8);
+            let block = MinecraftBlock::dec_digit_to_log(rem as u8);
             blocks.push(block);
             bits /= 10;
         }

@@ -258,4 +258,20 @@ impl MinecraftBlock {
 
         char::from_digit((a - b) as u32, 16)
     }
+
+    pub const fn dec_digit_to_log(decimal_digit: u8) -> MinecraftBlock {
+        match decimal_digit {
+            0 => MinecraftBlock::CherryLog,
+            1 => MinecraftBlock::BambooLog,
+            2 => MinecraftBlock::BirchLog,
+            3 => MinecraftBlock::OakLog,
+            4 => MinecraftBlock::JungleLog,
+            5 => MinecraftBlock::AcaciaLog,
+            6 => MinecraftBlock::SpruceLog,
+            7 => MinecraftBlock::DarkOakLog,
+            8 => MinecraftBlock::CrimsonLog,
+            9 => MinecraftBlock::WarpedLog,
+            _ => unimplemented!(),
+        }
+    }
 }
