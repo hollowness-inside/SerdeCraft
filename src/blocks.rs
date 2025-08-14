@@ -1,355 +1,145 @@
 use crate::result::MinecraftError;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MinecraftBlock {
-    Stone,
-    Cobblestone,
-    QuartzBlock,
-    Obsidian,
+macro_rules! block_enum {
+    ({
+        $($name:ident = $value:literal),*
+    }) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        pub enum MinecraftBlock {
+            $($name,)*
+        }
 
-    WhiteWool,
-    LightGrayWool,
-    GrayWool,
-    BlackWool,
-    BrownWool,
-    RedWool,
-    OrangeWool,
-    YellowWool,
-    LimeWool,
-    GreenWool,
-    CyanWool,
-    LightBlueWool,
-    BlueWool,
-    PurpleWool,
-    MagentaWool,
-    PinkWool,
-
-    WhiteGlass,
-    LightGrayGlass,
-    GrayGlass,
-    BlackGlass,
-    BrownGlass,
-    RedGlass,
-    OrangeGlass,
-    YellowGlass,
-    LimeGlass,
-    GreenGlass,
-    CyanGlass,
-    LightBlueGlass,
-    BlueGlass,
-    PurpleGlass,
-    MagentaGlass,
-    PinkGlass,
-
-    WhiteTerracotta,
-    LightGrayTerracotta,
-    GrayTerracotta,
-    BlackTerracotta,
-    BrownTerracotta,
-    RedTerracotta,
-    OrangeTerracotta,
-    YellowTerracotta,
-    LimeTerracotta,
-    GreenTerracotta,
-    CyanTerracotta,
-    LightBlueTerracotta,
-    BlueTerracotta,
-    PurpleTerracotta,
-    MagentaTerracotta,
-    PinkTerracotta,
-
-    CherryPlanks,
-    BambooPlanks,
-    BirchPlanks,
-    OakPlanks,
-    JunglePlanks,
-    AcaciaPlanks,
-    SprucePlanks,
-    DarkOakPlanks,
-    CrimsonPlanks,
-    WarpedPlanks,
-
-    CoalBlock,
-    RedstoneBlock,
-
-    CherryLog,
-    BambooLog,
-    BirchLog,
-    OakLog,
-    JungleLog,
-    AcaciaLog,
-    SpruceLog,
-    DarkOakLog,
-    CrimsonLog,
-    WarpedLog,
-
-    DarkOakFence,
-    CherryFence,
-    CrimsonFence,
-    WarpedFence,
-
-    GoldBlock,
-    IronBlock,
-    LapisBlock,
-    EmeraldBlock,
-    DiamondBlock,
-
-    RawCopperBlock,
-    RawIronBlock,
-    RawGoldBlock,
-
-    RedstoneLamp,
-    Glowstone,
-    CryingObsidian,
-    BeeNest,
-    Bedrock,
-
-    Bricks,
-    Glass,
-
-    NetherQuartzBlock,
-    CrimsonNylium,
-    WarpedNylium,
-}
-
-impl std::fmt::Display for MinecraftBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let w = match self {
-            MinecraftBlock::Stone => "minecraft:stone",
-            MinecraftBlock::Cobblestone => "minecraft:cobblestone",
-            MinecraftBlock::QuartzBlock => "minecraft:quartz_block",
-            MinecraftBlock::Obsidian => "minecraft:obsidian",
-
-            MinecraftBlock::WhiteWool => "minecraft:white_wool",
-            MinecraftBlock::LightGrayWool => "minecraft:light_gray_wool",
-            MinecraftBlock::GrayWool => "minecraft:gray_wool",
-            MinecraftBlock::BlackWool => "minecraft:black_wool",
-            MinecraftBlock::BrownWool => "minecraft:brown_wool",
-            MinecraftBlock::RedWool => "minecraft:red_wool",
-            MinecraftBlock::OrangeWool => "minecraft:orange_wool",
-            MinecraftBlock::YellowWool => "minecraft:yellow_wool",
-            MinecraftBlock::LimeWool => "minecraft:lime_wool",
-            MinecraftBlock::GreenWool => "minecraft:green_wool",
-            MinecraftBlock::CyanWool => "minecraft:cyan_wool",
-            MinecraftBlock::LightBlueWool => "minecraft:light_blue_wool",
-            MinecraftBlock::BlueWool => "minecraft:blue_wool",
-            MinecraftBlock::PurpleWool => "minecraft:purple_wool",
-            MinecraftBlock::MagentaWool => "minecraft:magenta_wool",
-            MinecraftBlock::PinkWool => "minecraft:pink_wool",
-
-            MinecraftBlock::WhiteGlass => "minecraft:white_stained_glass",
-            MinecraftBlock::LightGrayGlass => "minecraft:light_gray_stained_glass",
-            MinecraftBlock::GrayGlass => "minecraft:gray_stained_glass",
-            MinecraftBlock::BlackGlass => "minecraft:black_stained_glass",
-            MinecraftBlock::BrownGlass => "minecraft:brown_stained_glass",
-            MinecraftBlock::RedGlass => "minecraft:red_stained_glass",
-            MinecraftBlock::OrangeGlass => "minecraft:orange_stained_glass",
-            MinecraftBlock::YellowGlass => "minecraft:yellow_stained_glass",
-            MinecraftBlock::LimeGlass => "minecraft:lime_stained_glass",
-            MinecraftBlock::GreenGlass => "minecraft:green_stained_glass",
-            MinecraftBlock::CyanGlass => "minecraft:cyan_stained_glass",
-            MinecraftBlock::LightBlueGlass => "minecraft:light_blue_stained_glass",
-            MinecraftBlock::BlueGlass => "minecraft:blue_stained_glass",
-            MinecraftBlock::PurpleGlass => "minecraft:purple_stained_glass",
-            MinecraftBlock::MagentaGlass => "minecraft:magenta_stained_glass",
-            MinecraftBlock::PinkGlass => "minecraft:pink_stained_glass",
-
-            MinecraftBlock::WhiteTerracotta => "minecraft:white_glazed_terracotta",
-            MinecraftBlock::LightGrayTerracotta => "minecraft:light_gray_glazed_terracotta",
-            MinecraftBlock::GrayTerracotta => "minecraft:gray_glazed_terracotta",
-            MinecraftBlock::BlackTerracotta => "minecraft:black_glazed_terracotta",
-            MinecraftBlock::BrownTerracotta => "minecraft:brown_glazed_terracotta",
-            MinecraftBlock::RedTerracotta => "minecraft:red_glazed_terracotta",
-            MinecraftBlock::OrangeTerracotta => "minecraft:orange_glazed_terracotta",
-            MinecraftBlock::YellowTerracotta => "minecraft:yellow_glazed_terracotta",
-            MinecraftBlock::LimeTerracotta => "minecraft:lime_glazed_terracotta",
-            MinecraftBlock::GreenTerracotta => "minecraft:green_glazed_terracotta",
-            MinecraftBlock::CyanTerracotta => "minecraft:cyan_glazed_terracotta",
-            MinecraftBlock::LightBlueTerracotta => "minecraft:light_blue_glazed_terracotta",
-            MinecraftBlock::BlueTerracotta => "minecraft:blue_glazed_terracotta",
-            MinecraftBlock::PurpleTerracotta => "minecraft:purple_glazed_terracotta",
-            MinecraftBlock::MagentaTerracotta => "minecraft:magenta_glazed_terracotta",
-            MinecraftBlock::PinkTerracotta => "minecraft:pink_glazed_terracotta",
-
-            MinecraftBlock::CherryPlanks => "minecraft:cherry_planks",
-            MinecraftBlock::BambooPlanks => "minecraft:bamboo_planks",
-            MinecraftBlock::BirchPlanks => "minecraft:birch_planks",
-            MinecraftBlock::OakPlanks => "minecraft:oak_planks",
-            MinecraftBlock::JunglePlanks => "minecraft:jungle_planks",
-            MinecraftBlock::AcaciaPlanks => "minecraft:acacia_planks",
-            MinecraftBlock::SprucePlanks => "minecraft:spruce_planks",
-            MinecraftBlock::DarkOakPlanks => "minecraft:dark_oak_planks",
-            MinecraftBlock::CrimsonPlanks => "minecraft:crimson_planks",
-            MinecraftBlock::WarpedPlanks => "minecraft:warped_planks",
-
-            MinecraftBlock::CoalBlock => "minecraft:coal_block",
-            MinecraftBlock::RedstoneBlock => "minecraft:redstone_block",
-
-            MinecraftBlock::CherryLog => "minecraft:cherry_log",
-            MinecraftBlock::BambooLog => "minecraft:bamboo_block",
-            MinecraftBlock::BirchLog => "minecraft:birch_log",
-            MinecraftBlock::OakLog => "minecraft:oak_log",
-            MinecraftBlock::JungleLog => "minecraft:jungle_log",
-            MinecraftBlock::AcaciaLog => "minecraft:acacia_log",
-            MinecraftBlock::SpruceLog => "minecraft:spruce_log",
-            MinecraftBlock::DarkOakLog => "minecraft:dark_oak_log",
-            MinecraftBlock::CrimsonLog => "minecraft:crimson_stem",
-            MinecraftBlock::WarpedLog => "minecraft:warped_stem",
-
-            MinecraftBlock::DarkOakFence => "minecraft:dark_oak_fence",
-            MinecraftBlock::CherryFence => "minecraft:cherry_fence",
-            MinecraftBlock::CrimsonFence => "minecraft:crimson_fence",
-            MinecraftBlock::WarpedFence => "minecraft:warped_fence",
-
-            MinecraftBlock::GoldBlock => "minecraft:gold_block",
-            MinecraftBlock::IronBlock => "minecraft:iron_block",
-            MinecraftBlock::LapisBlock => "minecraft:lapis_block",
-            MinecraftBlock::EmeraldBlock => "minecraft:emerald_block",
-            MinecraftBlock::DiamondBlock => "minecraft:diamond_block",
-
-            MinecraftBlock::RawCopperBlock => "minecraft:raw_copper_block",
-            MinecraftBlock::RawIronBlock => "minecraft:raw_iron_block",
-            MinecraftBlock::RawGoldBlock => "minecraft:raw_gold_block",
-
-            MinecraftBlock::Bricks => "minecraft:bricks",
-            MinecraftBlock::Glass => "minecraft:glass",
-            MinecraftBlock::CryingObsidian => "minecraft:crying_obsidian",
-            MinecraftBlock::BeeNest => "minecraft:bee_nest",
-            MinecraftBlock::Bedrock => "minecraft:bedrock",
-
-            MinecraftBlock::RedstoneLamp => "minecraft:redstone_lamp",
-            MinecraftBlock::Glowstone => "minecraft:glowstone",
-
-            MinecraftBlock::NetherQuartzBlock => "minecraft:nether_quartz_block",
-            MinecraftBlock::CrimsonNylium => "minecraft:crimson_nylium",
-            MinecraftBlock::WarpedNylium => "minecraft:warped_nylium",
-        };
-
-        write!(f, "{w}")
-    }
-}
-
-impl TryFrom<&str> for MinecraftBlock {
-    type Error = MinecraftError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let b = match value {
-            "minecraft:stone" => MinecraftBlock::Stone,
-            "minecraft:cobblestone" => MinecraftBlock::Cobblestone,
-            "minecraft:quartz_block" => MinecraftBlock::QuartzBlock,
-            "minecraft:obsidian" => MinecraftBlock::Obsidian,
-
-            "minecraft:white_wool" => MinecraftBlock::WhiteWool,
-            "minecraft:light_gray_wool" => MinecraftBlock::LightGrayWool,
-            "minecraft:gray_wool" => MinecraftBlock::GrayWool,
-            "minecraft:black_wool" => MinecraftBlock::BlackWool,
-            "minecraft:brown_wool" => MinecraftBlock::BrownWool,
-            "minecraft:red_wool" => MinecraftBlock::RedWool,
-            "minecraft:orange_wool" => MinecraftBlock::OrangeWool,
-            "minecraft:yellow_wool" => MinecraftBlock::YellowWool,
-            "minecraft:lime_wool" => MinecraftBlock::LimeWool,
-            "minecraft:green_wool" => MinecraftBlock::GreenWool,
-            "minecraft:cyan_wool" => MinecraftBlock::CyanWool,
-            "minecraft:light_blue_wool" => MinecraftBlock::LightBlueWool,
-            "minecraft:blue_wool" => MinecraftBlock::BlueWool,
-            "minecraft:purple_wool" => MinecraftBlock::PurpleWool,
-            "minecraft:magenta_wool" => MinecraftBlock::MagentaWool,
-            "minecraft:pink_wool" => MinecraftBlock::PinkWool,
-
-            "minecraft:white_stained_glass" => MinecraftBlock::WhiteGlass,
-            "minecraft:light_gray_stained_glass" => MinecraftBlock::LightGrayGlass,
-            "minecraft:gray_stained_glass" => MinecraftBlock::GrayGlass,
-            "minecraft:black_stained_glass" => MinecraftBlock::BlackGlass,
-            "minecraft:brown_stained_glass" => MinecraftBlock::BrownGlass,
-            "minecraft:red_stained_glass" => MinecraftBlock::RedGlass,
-            "minecraft:orange_stained_glass" => MinecraftBlock::OrangeGlass,
-            "minecraft:yellow_stained_glass" => MinecraftBlock::YellowGlass,
-            "minecraft:lime_stained_glass" => MinecraftBlock::LimeGlass,
-            "minecraft:green_stained_glass" => MinecraftBlock::GreenGlass,
-            "minecraft:cyan_stained_glass" => MinecraftBlock::CyanGlass,
-            "minecraft:light_blue_stained_glass" => MinecraftBlock::LightBlueGlass,
-            "minecraft:blue_stained_glass" => MinecraftBlock::BlueGlass,
-            "minecraft:purple_stained_glass" => MinecraftBlock::PurpleGlass,
-            "minecraft:magenta_stained_glass" => MinecraftBlock::MagentaGlass,
-            "minecraft:pink_stained_glass" => MinecraftBlock::PinkGlass,
-
-            "minecraft:white_glazed_terracotta" => MinecraftBlock::WhiteTerracotta,
-            "minecraft:light_gray_glazed_terracotta" => MinecraftBlock::LightGrayTerracotta,
-            "minecraft:gray_glazed_terracotta" => MinecraftBlock::GrayTerracotta,
-            "minecraft:black_glazed_terracotta" => MinecraftBlock::BlackTerracotta,
-            "minecraft:brown_glazed_terracotta" => MinecraftBlock::BrownTerracotta,
-            "minecraft:red_glazed_terracotta" => MinecraftBlock::RedTerracotta,
-            "minecraft:orange_glazed_terracotta" => MinecraftBlock::OrangeTerracotta,
-            "minecraft:yellow_glazed_terracotta" => MinecraftBlock::YellowTerracotta,
-            "minecraft:lime_glazed_terracotta" => MinecraftBlock::LimeTerracotta,
-            "minecraft:green_glazed_terracotta" => MinecraftBlock::GreenTerracotta,
-            "minecraft:cyan_glazed_terracotta" => MinecraftBlock::CyanTerracotta,
-            "minecraft:light_blue_glazed_terracotta" => MinecraftBlock::LightBlueTerracotta,
-            "minecraft:blue_glazed_terracotta" => MinecraftBlock::BlueTerracotta,
-            "minecraft:purple_glazed_terracotta" => MinecraftBlock::PurpleTerracotta,
-            "minecraft:magenta_glazed_terracotta" => MinecraftBlock::MagentaTerracotta,
-            "minecraft:pink_glazed_terracotta" => MinecraftBlock::PinkTerracotta,
-
-            "minecraft:cherry_planks" => MinecraftBlock::CherryPlanks,
-            "minecraft:bamboo_planks" => MinecraftBlock::BambooPlanks,
-            "minecraft:birch_planks" => MinecraftBlock::BirchPlanks,
-            "minecraft:oak_planks" => MinecraftBlock::OakPlanks,
-            "minecraft:jungle_planks" => MinecraftBlock::JunglePlanks,
-            "minecraft:acacia_planks" => MinecraftBlock::AcaciaPlanks,
-            "minecraft:spruce_planks" => MinecraftBlock::SprucePlanks,
-            "minecraft:dark_oak_planks" => MinecraftBlock::DarkOakPlanks,
-            "minecraft:crimson_planks" => MinecraftBlock::CrimsonPlanks,
-            "minecraft:warped_planks" => MinecraftBlock::WarpedPlanks,
-
-            "minecraft:coal_block" => MinecraftBlock::CoalBlock,
-            "minecraft:redstone_block" => MinecraftBlock::RedstoneBlock,
-
-            "minecraft:cherry_log" => MinecraftBlock::CherryLog,
-            "minecraft:bamboo_block" => MinecraftBlock::BambooLog,
-            "minecraft:birch_log" => MinecraftBlock::BirchLog,
-            "minecraft:oak_log" => MinecraftBlock::OakLog,
-            "minecraft:jungle_log" => MinecraftBlock::JungleLog,
-            "minecraft:acacia_log" => MinecraftBlock::AcaciaLog,
-            "minecraft:spruce_log" => MinecraftBlock::SpruceLog,
-            "minecraft:dark_oak_log" => MinecraftBlock::DarkOakLog,
-            "minecraft:crimson_stem" => MinecraftBlock::CrimsonLog,
-            "minecraft:warped_stem" => MinecraftBlock::WarpedLog,
-
-            "minecraft:dark_oak_fence" => MinecraftBlock::DarkOakFence,
-            "minecraft:cherry_fence" => MinecraftBlock::CherryFence,
-            "minecraft:crimson_fence" => MinecraftBlock::CrimsonFence,
-            "minecraft:warped_fence" => MinecraftBlock::WarpedFence,
-
-            "minecraft:gold_block" => MinecraftBlock::GoldBlock,
-            "minecraft:iron_block" => MinecraftBlock::IronBlock,
-            "minecraft:lapis_block" => MinecraftBlock::LapisBlock,
-            "minecraft:emerald_block" => MinecraftBlock::EmeraldBlock,
-            "minecraft:diamond_block" => MinecraftBlock::DiamondBlock,
-
-            "minecraft:raw_copper_block" => MinecraftBlock::RawCopperBlock,
-            "minecraft:raw_iron_block" => MinecraftBlock::RawIronBlock,
-            "minecraft:raw_gold_block" => MinecraftBlock::RawGoldBlock,
-
-            "minecraft:bricks" => MinecraftBlock::Bricks,
-            "minecraft:glass" => MinecraftBlock::Glass,
-            "minecraft:crying_obsidian" => MinecraftBlock::CryingObsidian,
-            "minecraft:bee_nest" => MinecraftBlock::BeeNest,
-            "minecraft:bedrock" => MinecraftBlock::Bedrock,
-
-            "minecraft:redstone_lamp" => MinecraftBlock::RedstoneLamp,
-            "minecraft:glowstone" => MinecraftBlock::Glowstone,
-
-            "minecraft:nether_quartz_block" => MinecraftBlock::NetherQuartzBlock,
-            "minecraft:crimson_nylium" => MinecraftBlock::CrimsonNylium,
-            "minecraft:warped_nylium" => MinecraftBlock::WarpedNylium,
-            _ => {
-                return Err(MinecraftError::UnknownBlockType(value.to_string()));
+        impl std::fmt::Display for MinecraftBlock {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", match self {
+                    $(MinecraftBlock::$name => $value,)*
+                })
             }
-        };
+        }
 
-        Ok(b)
-    }
+        impl TryFrom<&str> for MinecraftBlock {
+            type Error = MinecraftError;
+
+            fn try_from(value: &str) -> Result<Self, Self::Error> {
+                Ok(match value {
+                    $($value => MinecraftBlock::$name,)*
+                    _ => return Err(MinecraftError::UnknownBlockType(value.to_string()))
+                })
+            }
+        }
+    };
 }
+
+block_enum!({
+    Stone = "minecraft:stone",
+    Cobblestone = "minecraft:cobblestone",
+    QuartzBlock = "minecraft:quartz_block",
+    Obsidian = "minecraft:obsidian",
+
+    WhiteWool = "minecraft:white_wool",
+    LightGrayWool = "minecraft:light_gray_wool",
+    GrayWool = "minecraft:gray_wool",
+    BlackWool = "minecraft:black_wool",
+    BrownWool = "minecraft:brown_wool",
+    RedWool = "minecraft:red_wool",
+    OrangeWool = "minecraft:orange_wool",
+    YellowWool = "minecraft:yellow_wool",
+    LimeWool = "minecraft:lime_wool",
+    GreenWool = "minecraft:green_wool",
+    CyanWool = "minecraft:cyan_wool",
+    LightBlueWool = "minecraft:light_blue_wool",
+    BlueWool = "minecraft:blue_wool",
+    PurpleWool = "minecraft:purple_wool",
+    MagentaWool = "minecraft:magenta_wool",
+    PinkWool = "minecraft:pink_wool",
+
+    WhiteGlass = "minecraft:white_stained_glass",
+    LightGrayGlass = "minecraft:light_gray_stained_glass",
+    GrayGlass = "minecraft:gray_stained_glass",
+    BlackGlass = "minecraft:black_stained_glass",
+    BrownGlass = "minecraft:brown_stained_glass",
+    RedGlass = "minecraft:red_stained_glass",
+    OrangeGlass = "minecraft:orange_stained_glass",
+    YellowGlass = "minecraft:yellow_stained_glass",
+    LimeGlass = "minecraft:lime_stained_glass",
+    GreenGlass = "minecraft:green_stained_glass",
+    CyanGlass = "minecraft:cyan_stained_glass",
+    LightBlueGlass = "minecraft:light_blue_stained_glass",
+    BlueGlass = "minecraft:blue_stained_glass",
+    PurpleGlass = "minecraft:purple_stained_glass",
+    MagentaGlass = "minecraft:magenta_stained_glass",
+    PinkGlass = "minecraft:pink_stained_glass",
+
+    WhiteTerracotta = "minecraft:white_glazed_terracotta",
+    LightGrayTerracotta = "minecraft:light_gray_glazed_terracotta",
+    GrayTerracotta = "minecraft:gray_glazed_terracotta",
+    BlackTerracotta = "minecraft:black_glazed_terracotta",
+    BrownTerracotta = "minecraft:brown_glazed_terracotta",
+    RedTerracotta = "minecraft:red_glazed_terracotta",
+    OrangeTerracotta = "minecraft:orange_glazed_terracotta",
+    YellowTerracotta = "minecraft:yellow_glazed_terracotta",
+    LimeTerracotta = "minecraft:lime_glazed_terracotta",
+    GreenTerracotta = "minecraft:green_glazed_terracotta",
+    CyanTerracotta = "minecraft:cyan_glazed_terracotta",
+    LightBlueTerracotta = "minecraft:light_blue_glazed_terracotta",
+    BlueTerracotta = "minecraft:blue_glazed_terracotta",
+    PurpleTerracotta = "minecraft:purple_glazed_terracotta",
+    MagentaTerracotta = "minecraft:magenta_glazed_terracotta",
+    PinkTerracotta = "minecraft:pink_glazed_terracotta",
+
+    CherryPlanks = "minecraft:cherry_planks",
+    BambooPlanks = "minecraft:bamboo_planks",
+    BirchPlanks = "minecraft:birch_planks",
+    OakPlanks = "minecraft:oak_planks",
+    JunglePlanks = "minecraft:jungle_planks",
+    AcaciaPlanks = "minecraft:acacia_planks",
+    SprucePlanks = "minecraft:spruce_planks",
+    DarkOakPlanks = "minecraft:dark_oak_planks",
+    CrimsonPlanks = "minecraft:crimson_planks",
+    WarpedPlanks = "minecraft:warped_planks",
+
+    CoalBlock = "minecraft:coal_block",
+    RedstoneBlock = "minecraft:redstone_block",
+
+    CherryLog = "minecraft:cherry_log",
+    BambooLog = "minecraft:bamboo_block",
+    BirchLog = "minecraft:birch_log",
+    OakLog = "minecraft:oak_log",
+    JungleLog = "minecraft:jungle_log",
+    AcaciaLog = "minecraft:acacia_log",
+    SpruceLog = "minecraft:spruce_log",
+    DarkOakLog = "minecraft:dark_oak_log",
+    CrimsonLog = "minecraft:crimson_stem",
+    WarpedLog = "minecraft:warped_stem",
+
+    DarkOakFence = "minecraft:dark_oak_fence",
+    CherryFence = "minecraft:cherry_fence",
+    CrimsonFence = "minecraft:crimson_fence",
+    WarpedFence = "minecraft:warped_fence",
+
+    GoldBlock = "minecraft:gold_block",
+    IronBlock = "minecraft:iron_block",
+    LapisBlock = "minecraft:lapis_block",
+    EmeraldBlock = "minecraft:emerald_block",
+    DiamondBlock = "minecraft:diamond_block",
+
+    RawCopperBlock = "minecraft:raw_copper_block",
+    RawIronBlock = "minecraft:raw_iron_block",
+    RawGoldBlock = "minecraft:raw_gold_block",
+
+    Bricks = "minecraft:bricks",
+    Glass = "minecraft:glass",
+    CryingObsidian = "minecraft:crying_obsidian",
+    BeeNest = "minecraft:bee_nest",
+    Bedrock = "minecraft:bedrock",
+
+    RedstoneLamp = "minecraft:redstone_lamp",
+    Glowstone = "minecraft:glowstone",
+
+    NetherQuartzBlock = "minecraft:nether_quartz_block",
+    CrimsonNylium = "minecraft:crimson_nylium",
+    WarpedNylium = "minecraft:warped_nylium"
+});
 
 impl MinecraftBlock {
     pub fn is_glass(&self) -> bool {
