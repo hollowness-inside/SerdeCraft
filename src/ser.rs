@@ -180,15 +180,12 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
         let mut blocks = Vec::new();
         let mut bits = v.to_bits();
-        while bits > 10 {
+        while bits > 0 {
             let rem = bits % 10;
             let block = MinecraftBlock::dec_digit_to_log(rem as u8);
             blocks.push(block);
             bits /= 10;
         }
-        let rem = bits % 10;
-        let block = MinecraftSerializer::u8_to_log(rem as u8);
-        blocks.push(block);
         blocks.reverse();
 
         self.place_blocks(&blocks)
