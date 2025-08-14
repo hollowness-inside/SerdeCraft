@@ -39,31 +39,6 @@ impl MinecraftSerializer {
         Ok(())
     }
 
-    fn u8_to_terracotta(v: u8) -> Vec<MinecraftBlock> {
-        format!("{:02X}", v)
-            .chars()
-            .map(|c| match c {
-                '0' => MinecraftBlock::WhiteTerracotta,
-                '1' => MinecraftBlock::LightGrayTerracotta,
-                '2' => MinecraftBlock::GrayTerracotta,
-                '3' => MinecraftBlock::BlackTerracotta,
-                '4' => MinecraftBlock::BrownTerracotta,
-                '5' => MinecraftBlock::RedTerracotta,
-                '6' => MinecraftBlock::OrangeTerracotta,
-                '7' => MinecraftBlock::YellowTerracotta,
-                '8' => MinecraftBlock::LimeTerracotta,
-                '9' => MinecraftBlock::GreenTerracotta,
-                'A' => MinecraftBlock::CyanTerracotta,
-                'B' => MinecraftBlock::LightBlueTerracotta,
-                'C' => MinecraftBlock::BlueTerracotta,
-                'D' => MinecraftBlock::PurpleTerracotta,
-                'E' => MinecraftBlock::MagentaTerracotta,
-                'F' => MinecraftBlock::PinkTerracotta,
-                _ => unreachable!(),
-            })
-            .collect()
-    }
-
     fn u8_to_wool(v: u8) -> Vec<MinecraftBlock> {
         format!("{:02X}", v)
             .chars()
@@ -118,7 +93,7 @@ impl MinecraftSerializer {
         let blocks: Vec<_> = bytes
             .into_iter()
             .take(bits / 8)
-            .flat_map(Self::u8_to_terracotta)
+            .flat_map(MinecraftBlock::u8_to_terracotta)
             .collect();
         self.place_blocks(&blocks)
     }

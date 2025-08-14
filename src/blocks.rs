@@ -274,4 +274,36 @@ impl MinecraftBlock {
             _ => unimplemented!(),
         }
     }
+
+    const fn hex_digit_to_terracotta(hex_digit: u8) -> MinecraftBlock {
+        match hex_digit {
+            0 => MinecraftBlock::WhiteTerracotta,
+            1 => MinecraftBlock::LightGrayTerracotta,
+            2 => MinecraftBlock::GrayTerracotta,
+            3 => MinecraftBlock::BlackTerracotta,
+            4 => MinecraftBlock::BrownTerracotta,
+            5 => MinecraftBlock::RedTerracotta,
+            6 => MinecraftBlock::OrangeTerracotta,
+            7 => MinecraftBlock::YellowTerracotta,
+            8 => MinecraftBlock::LimeTerracotta,
+            9 => MinecraftBlock::GreenTerracotta,
+            10 => MinecraftBlock::CyanTerracotta,
+            11 => MinecraftBlock::LightBlueTerracotta,
+            12 => MinecraftBlock::BlueTerracotta,
+            13 => MinecraftBlock::PurpleTerracotta,
+            14 => MinecraftBlock::MagentaTerracotta,
+            15 => MinecraftBlock::PinkTerracotta,
+            _ => unreachable!(),
+        }
+    }
+
+    pub const fn u8_to_terracotta(v: u8) -> [MinecraftBlock; 2] {
+        let hi = (v >> 4) & 0x0F;
+        let lo = v & 0x0F;
+
+        let hi = MinecraftBlock::hex_digit_to_terracotta(hi);
+        let lo = MinecraftBlock::hex_digit_to_terracotta(lo);
+        
+        [hi, lo]
+    }
 }
