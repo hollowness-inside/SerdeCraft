@@ -39,31 +39,6 @@ impl MinecraftSerializer {
         Ok(())
     }
 
-    fn u8_to_wool(v: u8) -> Vec<MinecraftBlock> {
-        format!("{:02X}", v)
-            .chars()
-            .map(|c| match c {
-                '0' => MinecraftBlock::WhiteWool,
-                '1' => MinecraftBlock::LightGrayWool,
-                '2' => MinecraftBlock::GrayWool,
-                '3' => MinecraftBlock::BlackWool,
-                '4' => MinecraftBlock::BrownWool,
-                '5' => MinecraftBlock::RedWool,
-                '6' => MinecraftBlock::OrangeWool,
-                '7' => MinecraftBlock::YellowWool,
-                '8' => MinecraftBlock::LimeWool,
-                '9' => MinecraftBlock::GreenWool,
-                'A' => MinecraftBlock::CyanWool,
-                'B' => MinecraftBlock::LightBlueWool,
-                'C' => MinecraftBlock::BlueWool,
-                'D' => MinecraftBlock::PurpleWool,
-                'E' => MinecraftBlock::MagentaWool,
-                'F' => MinecraftBlock::PinkWool,
-                _ => unreachable!(),
-            })
-            .collect()
-    }
-
     fn bool_to_block(v: bool) -> MinecraftBlock {
         match v {
             true => MinecraftBlock::Glowstone,
@@ -168,7 +143,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
         self.place_block(MinecraftBlock::CryingObsidian)?;
-        let block = MinecraftSerializer::u8_to_wool(v as u8);
+        let block = MinecraftBlock::u8_to_wool(v as u8);
         self.place_blocks(&block)
     }
 
@@ -181,7 +156,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         let blocks: Vec<_> = v
             .iter()
             .copied()
-            .flat_map(MinecraftSerializer::u8_to_wool)
+            .flat_map(MinecraftBlock::u8_to_wool)
             .collect();
 
         self.place_blocks(&blocks)

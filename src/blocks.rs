@@ -303,7 +303,39 @@ impl MinecraftBlock {
 
         let hi = MinecraftBlock::hex_digit_to_terracotta(hi);
         let lo = MinecraftBlock::hex_digit_to_terracotta(lo);
-        
+
+        [hi, lo]
+    }
+
+    const fn hex_digit_to_wool(hex_digit: u8) -> MinecraftBlock {
+        match hex_digit {
+            0 => MinecraftBlock::WhiteWool,
+            1 => MinecraftBlock::LightGrayWool,
+            2 => MinecraftBlock::GrayWool,
+            3 => MinecraftBlock::BlackWool,
+            4 => MinecraftBlock::BrownWool,
+            5 => MinecraftBlock::RedWool,
+            6 => MinecraftBlock::OrangeWool,
+            7 => MinecraftBlock::YellowWool,
+            8 => MinecraftBlock::LimeWool,
+            9 => MinecraftBlock::GreenWool,
+            10 => MinecraftBlock::CyanWool,
+            11 => MinecraftBlock::LightBlueWool,
+            12 => MinecraftBlock::BlueWool,
+            13 => MinecraftBlock::PurpleWool,
+            14 => MinecraftBlock::MagentaWool,
+            15 => MinecraftBlock::PinkWool,
+            _ => unreachable!(),
+        }
+    }
+
+    pub const fn u8_to_wool(v: u8) -> [MinecraftBlock; 2] {
+        let hi = (v >> 4) & 0x0F;
+        let lo = v & 0x0F;
+
+        let hi = MinecraftBlock::hex_digit_to_wool(hi);
+        let lo = MinecraftBlock::hex_digit_to_wool(lo);
+
         [hi, lo]
     }
 }
