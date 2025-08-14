@@ -82,32 +82,7 @@ impl MinecraftSerializer {
             })
             .collect()
     }
-
-    fn u8_to_glass(v: u8) -> Vec<MinecraftBlock> {
-        format!("{:02X}", v)
-            .chars()
-            .map(|c| match c {
-                '0' => MinecraftBlock::WhiteGlass,
-                '1' => MinecraftBlock::LightGrayGlass,
-                '2' => MinecraftBlock::GrayGlass,
-                '3' => MinecraftBlock::BlackGlass,
-                '4' => MinecraftBlock::BrownGlass,
-                '5' => MinecraftBlock::RedGlass,
-                '6' => MinecraftBlock::OrangeGlass,
-                '7' => MinecraftBlock::YellowGlass,
-                '8' => MinecraftBlock::LimeGlass,
-                '9' => MinecraftBlock::GreenGlass,
-                'A' => MinecraftBlock::CyanGlass,
-                'B' => MinecraftBlock::LightBlueGlass,
-                'C' => MinecraftBlock::BlueGlass,
-                'D' => MinecraftBlock::PurpleGlass,
-                'E' => MinecraftBlock::MagentaGlass,
-                'F' => MinecraftBlock::PinkGlass,
-                _ => unreachable!(),
-            })
-            .collect()
-    }
-
+    
     fn u8_to_wool(v: u8) -> Vec<MinecraftBlock> {
         format!("{:02X}", v)
             .chars()
