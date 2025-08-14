@@ -142,7 +142,7 @@ block_enum!({
 });
 
 impl MinecraftBlock {
-    pub fn is_glass(&self) -> bool {
+    pub const fn is_glass(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::WhiteGlass
@@ -164,7 +164,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn is_wool(&self) -> bool {
+    pub const fn is_wool(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::WhiteWool
@@ -186,7 +186,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn is_log(&self) -> bool {
+    pub const fn is_log(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::CherryLog
@@ -202,7 +202,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn is_terracotta(&self) -> bool {
+    pub const fn is_terracotta(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::WhiteTerracotta
@@ -224,7 +224,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn is_planks(&self) -> bool {
+    pub const fn is_planks(&self) -> bool {
         matches!(
             self,
             MinecraftBlock::CherryPlanks
@@ -240,9 +240,7 @@ impl MinecraftBlock {
         )
     }
 
-    pub fn to_digit(&self) -> Option<char> {
-        println!("{self} {}", self.is_wool());
-
+    pub const fn to_digit(&self) -> Option<char> {
         let a = *self as u8;
         let b = if self.is_glass() {
             MinecraftBlock::WhiteGlass
