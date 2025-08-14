@@ -32,7 +32,7 @@ fn main() -> MinecraftResult<()> {
         id: 12345,
         username: "TestUser".to_string(),
         direction: Direction::North,
-        health: 100.0,
+        health: 123.456,
         profile: UserProfile {
             email: "testuser@example.com".to_string(),
             age: 30,
