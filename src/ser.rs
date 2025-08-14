@@ -32,11 +32,12 @@ impl MinecraftSerializer {
         Ok(())
     }
 
+    #[inline(always)]
     fn place_blocks(&mut self, blocks: &[MinecraftBlock]) -> Result<(), MinecraftError> {
-        for &block in blocks {
-            self.place_block(block)?;
-        }
-        Ok(())
+        blocks
+            .into_iter()
+            .map(|&block| self.place_block(block))
+            .collect()
     }
 
     fn serialize_number(
@@ -147,8 +148,9 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
         self.place_block(MinecraftBlock::CryingObsidian)?;
-        let block = MinecraftBlock::u8_to_wool(v as u8);
-        self.place_blocks(&block)
+
+        let blocks = MinecraftBlock::u8_to_wool(v as u8);
+        self.place_blocks(&blocks)
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
