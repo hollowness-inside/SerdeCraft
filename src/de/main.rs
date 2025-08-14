@@ -89,7 +89,7 @@ impl<'a> MinecraftDeserializer {
             }
         }
 
-        let uvs = digits.iter().collect::<String>();
+        let uvs = digits.iter().rev().collect::<String>();
         let bits: u64 = uvs.parse()?;
         let value = f64::from_bits(bits);
         Ok(value)
