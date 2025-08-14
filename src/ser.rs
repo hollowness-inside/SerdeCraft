@@ -39,13 +39,6 @@ impl MinecraftSerializer {
         Ok(())
     }
 
-    fn bool_to_block(v: bool) -> MinecraftBlock {
-        match v {
-            true => MinecraftBlock::Glowstone,
-            false => MinecraftBlock::RedstoneLamp,
-        }
-    }
-
     fn serialize_number(
         &mut self,
         v: u64,
@@ -87,7 +80,11 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        let block = MinecraftSerializer::bool_to_block(v);
+        let block = match v {
+            true => MinecraftBlock::Glowstone,
+            false => MinecraftBlock::RedstoneLamp,
+        };
+
         self.place_block(block)
     }
 
