@@ -1,5 +1,3 @@
-#![allow(unused_variables, dead_code)]
-
 mod blocks;
 pub use blocks::MinecraftBlock;
 
