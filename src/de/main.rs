@@ -51,7 +51,7 @@ impl<'a> MinecraftDeserializer {
             let block = self.consume()?;
             let chr = block
                 .to_digit()
-                .ok_or_else(|| MinecraftError::BlockToDigitConversion(format!("{:?}", block)))?;
+                .ok_or_else(|| MinecraftError::BlockToDigitConversion(block.to_string()))?;
             *item = chr;
         }
 
@@ -79,9 +79,9 @@ impl<'a> MinecraftDeserializer {
         loop {
             let block = self.consume()?;
             if block.is_log() {
-                let chr = block.to_digit().ok_or_else(|| {
-                    MinecraftError::BlockToDigitConversion(format!("{:?}", block))
-                })?;
+                let chr = block
+                    .to_digit()
+                    .ok_or_else(|| MinecraftError::BlockToDigitConversion(block.to_string()))?;
                 digits.push(chr);
             } else {
                 self.rewind()?;
@@ -109,14 +109,14 @@ impl<'a> MinecraftDeserializer {
     fn u8_from_blocks(&mut self, blocks: &[MinecraftBlock]) -> MinecraftResult<u8> {
         let mut src = String::with_capacity(2);
         src.push(
-            blocks[0].to_digit().ok_or_else(|| {
-                MinecraftError::BlockToDigitConversion(format!("{:?}", blocks[0]))
-            })?,
+            blocks[0]
+                .to_digit()
+                .ok_or_else(|| MinecraftError::BlockToDigitConversion(blocks[0].to_string()))?,
         );
         src.push(
-            blocks[1].to_digit().ok_or_else(|| {
-                MinecraftError::BlockToDigitConversion(format!("{:?}", blocks[1]))
-            })?,
+            blocks[1]
+                .to_digit()
+                .ok_or_else(|| MinecraftError::BlockToDigitConversion(blocks[1].to_string()))?,
         );
         u8::from_str_radix(&src, 16).map_err(|_| MinecraftError::InvalidHexString(src))
     }
@@ -241,7 +241,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             MinecraftBlock::RedstoneLamp => visitor.visit_bool(false),
             other => Err(MinecraftError::UnexpectedBlock {
                 expected: "Glowstone or RedstoneLamp".to_string(),
-                found: format!("{:?}", other),
+                found: other.to_string(),
             }),
         }
     }
@@ -259,7 +259,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "CoalBlock followed by Bricks".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
@@ -277,7 +277,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "RawCopperBlock followed by Bricks".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
@@ -295,7 +295,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "RawIronBlock followed by Bricks".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
@@ -313,7 +313,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "RawGoldBlock followed by Bricks".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
@@ -330,7 +330,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             other => Err(MinecraftError::UnexpectedBlock {
                 expected: "CoalBlock".to_string(),
-                found: format!("{:?}", other),
+                found: other.to_string(),
             }),
         }
     }
@@ -346,7 +346,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             other => Err(MinecraftError::UnexpectedBlock {
                 expected: "RawCopperBlock".to_string(),
-                found: format!("{:?}", other),
+                found: other.to_string(),
             }),
         }
     }
@@ -362,7 +362,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             other => Err(MinecraftError::UnexpectedBlock {
                 expected: "RawIronBlock".to_string(),
-                found: format!("{:?}", other),
+                found: other.to_string(),
             }),
         }
     }
@@ -378,7 +378,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             other => Err(MinecraftError::UnexpectedBlock {
                 expected: "RawGoldBlock".to_string(),
-                found: format!("{:?}", other),
+                found: other.to_string(),
             }),
         }
     }
@@ -409,7 +409,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             other => Err(MinecraftError::UnexpectedBlock {
                 expected: "CryingObsidian".to_string(),
-                found: format!("{:?}", other),
+                found: other.to_string(),
             }),
         }
     }
@@ -461,7 +461,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             MinecraftBlock::RedstoneBlock => visitor.visit_some(self),
             other => Err(MinecraftError::UnexpectedBlock {
                 expected: "Bedrock or RedstoneBlock".to_string(),
-                found: format!("{:?}", other),
+                found: other.to_string(),
             }),
         }
     }
@@ -521,7 +521,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "Obsidian followed by Glass".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
@@ -550,7 +550,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "Obsidian followed by Obsidian".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
@@ -572,7 +572,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             }
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "Obsidian followed by QuartzBlock".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
@@ -592,7 +592,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             (MinecraftBlock::Obsidian, MinecraftBlock::Cobblestone) => self.parse_seq(visitor),
             (other1, other2) => Err(MinecraftError::UnexpectedBlock {
                 expected: "Obsidian followed by Cobblestone".to_string(),
-                found: format!("{:?}, {:?}", other1, other2),
+                found: format!("{}, {}", other1, other2),
             }),
         }
     }
