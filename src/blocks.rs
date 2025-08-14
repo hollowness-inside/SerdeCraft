@@ -258,6 +258,6 @@ impl MinecraftBlock {
             return None;
         } as u8;
 
-        char::from_digit((b - a) as u32, 16)
+        char::from_digit((a - b) as u32, 16)
     }
 }
