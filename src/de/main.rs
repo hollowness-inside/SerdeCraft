@@ -61,10 +61,8 @@ impl<'a> MinecraftDeserializer {
 
         // Pad with zeros to make it 8 bytes for i64
         let mut padded_bits = [0u8; 8];
-        for (i, &byte) in bits.iter().enumerate() {
-            if i < 8 {
-                padded_bits[i] = byte;
-            }
+        for (i, &byte) in bits.iter().take(8).enumerate() {
+            padded_bits[i] = byte;
         }
 
         let bits = i64::from_le_bytes(padded_bits);
