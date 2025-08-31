@@ -34,10 +34,7 @@ impl MinecraftSerializer {
 
     #[inline(always)]
     fn place_blocks(&mut self, blocks: &[MinecraftBlock]) -> Result<(), MinecraftError> {
-        blocks
-            .into_iter()
-            .map(|&block| self.place_block(block))
-            .collect()
+        blocks.iter().try_for_each(|&block| self.place_block(block))
     }
 
     fn serialize_number(
@@ -62,8 +59,7 @@ impl MinecraftSerializer {
             .into_iter()
             .take(bits / 8)
             .flat_map(MinecraftBlock::u8_to_terracotta)
-            .map(|block| self.place_block(block))
-            .collect()
+            .try_for_each(|block| self.place_block(block))
     }
 }
 
