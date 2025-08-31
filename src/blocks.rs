@@ -274,7 +274,8 @@ impl MinecraftBlock {
             7 => MinecraftBlock::DarkOakLog,
             8 => MinecraftBlock::CrimsonLog,
             9 => MinecraftBlock::WarpedLog,
-            _ => unimplemented!(),
+            // The caller `serialize_f64` provides the guarantee that the decimal digit is within range between 0 and 9
+            _ => unsafe { std::hint::unreachable_unchecked() },
         }
     }
 
@@ -296,7 +297,8 @@ impl MinecraftBlock {
             13 => MinecraftBlock::PurpleTerracotta,
             14 => MinecraftBlock::MagentaTerracotta,
             15 => MinecraftBlock::PinkTerracotta,
-            _ => unreachable!(),
+            // Callers guarantee that the digit is between 0 and 15
+            _ => unsafe { std::hint::unreachable_unchecked() },
         }
     }
 
@@ -328,7 +330,8 @@ impl MinecraftBlock {
             13 => MinecraftBlock::PurpleWool,
             14 => MinecraftBlock::MagentaWool,
             15 => MinecraftBlock::PinkWool,
-            _ => unreachable!(),
+            // Callers guarantee that the digit is between 0 and 15
+            _ => unsafe { std::hint::unreachable_unchecked() },
         }
     }
 

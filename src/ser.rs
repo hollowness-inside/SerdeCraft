@@ -51,7 +51,7 @@ impl MinecraftSerializer {
             16 => self.place_block(MinecraftBlock::RawCopperBlock)?,
             32 => self.place_block(MinecraftBlock::RawIronBlock)?,
             64 => self.place_block(MinecraftBlock::RawGoldBlock)?,
-            _ => panic!("Unsupported bit size for serialization: {}", bits),
+            _ => unsafe { std::hint::unreachable_unchecked() },
         }
 
         if signed {
