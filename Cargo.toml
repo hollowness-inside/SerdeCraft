@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-futures-util = "0.3.31"
 serde = { version = "1.0.219", features = ["derive"] }
 thiserror = "2.0.12"
 tungstenite = "0.27.0"
