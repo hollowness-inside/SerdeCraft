@@ -179,11 +179,11 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.place_block(MinecraftBlock::Bedrock)
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.serialize_unit()
     }
 
     fn serialize_unit_variant(
@@ -201,13 +201,16 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
 
     fn serialize_newtype_struct<T>(
         self,
-        _name: &'static str,
-        _value: &T,
+        name: &'static str,
+        value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        todo!()
+        self.place_block(MinecraftBlock::Obsidian)?;
+        self.place_block(MinecraftBlock::RedstoneBlock)?;
+        name.serialize(&mut *self)?;
+        value.serialize(&mut *self)
     }
 
     fn serialize_newtype_variant<T>(
@@ -239,10 +242,14 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
 
     fn serialize_tuple_struct(
         self,
-        _name: &'static str,
-        _len: usize,
+        name: &'static str,
+        len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        todo!()
+        self.place_block(MinecraftBlock::Obsidian)?;
+        self.place_block(MinecraftBlock::BeeNest)?;
+        name.serialize(&mut *self)?;
+        len.serialize(&mut *self)?;
+        Ok(self)
     }
 
     fn serialize_tuple_variant(
@@ -312,12 +319,12 @@ impl serde::ser::SerializeTuple for &mut MinecraftSerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        value.serialize(&mut **self)
+        <Self as serde::ser::SerializeSeq>::serialize_element(self, value)
     }
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(())
+        <Self as serde::ser::SerializeSeq>::end(self)
     }
 }
 
@@ -325,15 +332,15 @@ impl serde::ser::SerializeTupleStruct for &mut MinecraftSerializer {
     type Ok = ();
     type Error = MinecraftError;
 
-    fn serialize_field<T>(&mut self, _value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        todo!()
+        <Self as serde::ser::SerializeSeq>::serialize_element(self, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        <Self as serde::ser::SerializeSeq>::end(self)
     }
 }
 
@@ -341,15 +348,15 @@ impl serde::ser::SerializeTupleVariant for &mut MinecraftSerializer {
     type Ok = ();
     type Error = MinecraftError;
 
-    fn serialize_field<T>(&mut self, _value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        todo!()
+        <Self as serde::ser::SerializeSeq>::serialize_element(self, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        <Self as serde::ser::SerializeSeq>::end(self)
     }
 }
 
@@ -388,13 +395,13 @@ impl serde::ser::SerializeStruct for &mut MinecraftSerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        key.serialize(&mut **self)?;
-        value.serialize(&mut **self)
+        <Self as serde::ser::SerializeMap>::serialize_key(self, key)?;
+        <Self as serde::ser::SerializeMap>::serialize_key(self, value)
     }
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(())
+        <Self as serde::ser::SerializeMap>::end(self)
     }
 }
 
@@ -402,14 +409,14 @@ impl serde::ser::SerializeStructVariant for &mut MinecraftSerializer {
     type Ok = ();
     type Error = MinecraftError;
 
-    fn serialize_field<T>(&mut self, _key: &'static str, _value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        todo!()
+        <Self as serde::ser::SerializeStruct>::serialize_field(self, key, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        <Self as serde::ser::SerializeStruct>::end(self)
     }
 }
