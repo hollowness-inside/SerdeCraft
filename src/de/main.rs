@@ -141,7 +141,7 @@ impl<'a> MinecraftDeserializer {
     ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
         let name_actual = String::deserialize(&mut *self)?;
         if name_actual != name {
-            return Err(MinecraftError::StructNameMismatch {
+            return Err(MinecraftError::ValueMismatch {
                 expected: name.to_string(),
                 found: name_actual,
             });

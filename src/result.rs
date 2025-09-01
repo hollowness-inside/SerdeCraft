@@ -80,7 +80,7 @@ pub enum MinecraftError {
     TypeMismatch { expected: String, found: String },
 
     #[error("Struct name mismatch: expected '{expected}', found '{found}'")]
-    StructNameMismatch { expected: String, found: String },
+    ValueMismatch { expected: String, found: String },
 
     #[error("Invalid enum variant: '{0}'")]
     InvalidEnumVariant(String),
