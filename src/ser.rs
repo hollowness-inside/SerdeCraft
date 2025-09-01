@@ -396,7 +396,7 @@ impl serde::ser::SerializeStruct for &mut MinecraftSerializer {
         T: ?Sized + serde::Serialize,
     {
         <Self as serde::ser::SerializeMap>::serialize_key(self, key)?;
-        <Self as serde::ser::SerializeMap>::serialize_key(self, value)
+        <Self as serde::ser::SerializeMap>::serialize_value(self, value)
     }
 
     #[inline(always)]
