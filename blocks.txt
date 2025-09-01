@@ -1,0 +1,57 @@
+logs    : oak, spruce, birch, jungle, acacia, dark oak, mangrove, cherry, bamboo, crimson, warped = 11
+stripped: 
+planks  : 
+fence   :
+gate    :
+= 55
+
+stone, cobblestone, mossy cobblestone, stone bricks, smooth stone, cracked stone bricks, chieseled stone bricks, mossy stone bricks = 8
+granite, polished granite, diorite, polished diorite, andesite, polished andesite, tuff, chieseled tuff, polished tuff, tuff bricks, chieseled tuff bricks  = 11
+deepslate, cobbled dipslate, chieseled deepslate, polished deepslate, deepslate bricks, deepslate tiles, reinforced deepslate = 7
+packed mud, mud bricks = 2
+sandstone, red sandstone = 2
+sea lantern, prismarine, prismarine bricks, dark prismarine = 4
+netherrack, nether bricks, chieseled nether bricks, red nether bricks = 4
+basalt, smooth basalt, polished basalt, blackstone, gilded blackstone, chieseled polished blackstone, polished blackstone, polished blackstone bricks = 8
+end stone, end stone bricks, purpur block, purpur pillar = 4
+block of coal, iron, gold, redstone, emerald, lapis, diamond, netherite = 8
+quartz, chieseled quartz block, quartz bricks, quartz pillar = 4
+block of amethyst, budding amethyst
+salt block
+glass
+moss block
+obsidian
+crying obsidian
+crimson nylum
+warped nylum
+soul sand, soul soil
+bone block,
+deepslate ore: coal, iron, copper, gold, redstone, emerald, lapis lazuli, diamond = 9
+ore: coal, iron, copper, gold, redstone, emerald, lapis lazuli, diamond = 9
+nether ore: gold, quartz, 
+ancient debris
+raw: iron, copper, gold
+glowstone
+mushroom stem, shroomlight, red mushroom block, brown mushroom block, warped wart block, deepslate
+sculk
+pumpkin, melon,
+sponge, bee nest, hay bale
+slime block, honey block
+ochre froglight, verdant froglight, pearlscent froglight
+bedrock
+dried kelp
+dead tube coral block
+redstone lamp
+crafting table, smoker, furnance, loom, fletching table, smithing table, cartograhpy table
+note block, jukebox, cauldron,
+respawn anchor
+barrel
+target,
+waxed copper bulb, waxed exposed copper bulb, waxed weathered copper bulb, waxed oxidized copper bulb, 
+magma block
+
+wool: white, light gray, gray, black, brown, red, orange, yellow, lime, green, cyan, light blue, blue, purple, magenta, pink = 16
+terracotta: = 16
+concrete: = 16
+glazed terracotta: = 16
+tinted glass: = 16
