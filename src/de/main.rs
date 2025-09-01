@@ -121,8 +121,8 @@ impl<'a> MinecraftDeserializer {
                 }
                 (false, None) => {
                     // Rewind the non-wool block since we don't need it
-                    self.rewind()?;
-                    break;
+                        self.rewind()?;
+                        break;
                 }
                 (false, Some(_)) => {
                     return Err(MinecraftError::InvalidWoolSequence);
@@ -151,6 +151,31 @@ impl<'a> MinecraftDeserializer {
         visitor.visit_map(MCStructAccessor::new(self, len))
     }
 
+    fn parse_tuple_struct_sophisticated<V: Visitor<'a>>(
+        &mut self,
+        name: &'static str,
+        len: usize,
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        let name_actual = String::deserialize(&mut *self)?;
+        if name_actual != name {
+            return Err(MinecraftError::ValueMismatch {
+                expected: name.to_string(),
+                found: name_actual,
+            });
+        }
+
+        let len_actual = usize::deserialize(&mut *self)?;
+        if len_actual != len {
+            return Err(MinecraftError::ValueMismatch {
+                expected: len.to_string(),
+                found: len_actual.to_string(),
+            });
+        }
+
+        visitor.visit_seq(MCSeqAccessor::new(self))
+    }
+
     fn parse_struct<V: Visitor<'a>>(
         &mut self,
         visitor: V,
@@ -170,6 +195,34 @@ impl<'a> MinecraftDeserializer {
         visitor.visit_enum(MCEnumAccessor::new(self, variant_name))
     }
 
+    fn parse_unit_variant<V: Visitor<'a>>(
+        &mut self,
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        todo!()
+    }
+
+    fn parse_newtype_struct<V: Visitor<'a>>(
+        &mut self,
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        todo!()
+    }
+
+    fn parse_tuple<V: Visitor<'a>>(
+        &mut self,
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        todo!()
+    }
+
+    fn parse_tuple_struct<V: Visitor<'a>>(
+        &mut self,
+        visitor: V,
+    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
+        todo!()
+    }
+
     fn handle_obsidian<V>(&mut self, visitor: V) -> MinecraftResult<<V as Visitor<'a>>::Value>
     where
         V: Visitor<'a>,
@@ -177,7 +230,11 @@ impl<'a> MinecraftDeserializer {
         match self.consume()? {
             MinecraftBlock::Obsidian => visitor.visit_map(MCMapAccessor::new(self)),
             MinecraftBlock::QuartzBlock => self.parse_struct(visitor),
-            MinecraftBlock::Cobblestone => self.parse_seq(visitor),
+            MinecraftBlock::Cobblestone => self.parse_unit_variant(visitor),
+            MinecraftBlock::RedstoneBlock => self.parse_newtype_struct(visitor),
+            MinecraftBlock::Bricks => self.parse_seq(visitor),
+            MinecraftBlock::Glass => self.parse_tuple(visitor),
+            MinecraftBlock::BeeNest => self.parse_tuple_struct(visitor),
             _ => Err(MinecraftError::InvalidBlockSequence(
                 "Obsidian sequence".to_string(),
             )),
@@ -448,33 +505,49 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         }
     }
 
-    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        todo!()
+        match self.consume()? {
+            MinecraftBlock::Bedrock => visitor.visit_unit(),
+            other => Err(MinecraftError::UnexpectedBlock {
+                expected: "Bedrock".to_string(),
+                found: other.to_string(),
+            }),
+        }
     }
 
     fn deserialize_unit_struct<V>(
         self,
         _name: &'static str,
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        todo!()
+        self.deserialize_unit(visitor)
     }
 
     fn deserialize_newtype_struct<V>(
         self,
         _name: &'static str,
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        todo!()
+        let b1 = self.consume()?;
+        let b2 = self.consume()?;
+        match (b1, b2) {
+            (MinecraftBlock::Obsidian, MinecraftBlock::RedstoneBlock) => {
+                visitor.visit_newtype_struct(self)
+            }
+            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
+                expected: "Obsidian followed by Glass".to_string(),
+                found: format!("{}, {}", other1, other2),
+            }),
+        }
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -510,14 +583,24 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
 
     fn deserialize_tuple_struct<V>(
         self,
-        _name: &'static str,
-        _len: usize,
-        _visitor: V,
+        name: &'static str,
+        len: usize,
+        visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        todo!()
+        let b1 = self.consume()?;
+        let b2 = self.consume()?;
+        match (b1, b2) {
+            (MinecraftBlock::Obsidian, MinecraftBlock::BeeNest) => {
+                self.parse_tuple_struct_sophisticated(name, len, visitor)
+            }
+            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
+                expected: "Obsidian followed by Glass".to_string(),
+                found: format!("{}, {}", other1, other2),
+            }),
+        }
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
