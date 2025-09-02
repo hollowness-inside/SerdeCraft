@@ -1,10 +1,13 @@
+use std::hint::unreachable_unchecked;
+
 use crate::{MinecraftResult, result::MinecraftError};
 
 macro_rules! block_enum {
     ({
         $($name:ident = $value:literal),*
     }) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[repr(u8)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, num_enum::TryFromPrimitive)]
         pub enum MinecraftBlock {
             $($name,)*
         }
@@ -35,6 +38,20 @@ block_enum!({
     Cobblestone = "minecraft:cobblestone",
     QuartzBlock = "minecraft:quartz_block",
     Obsidian = "minecraft:obsidian",
+    Shroomlight = "minecraft:shroomlight",
+    ChiseledDeepslate = "minecraft:chiseled_deepslate",
+    Blackstone = "minecraft:blackstone",
+    GildedBlackstone = "minecraft:gilded_blackstone",
+    Prismarine = "minecraft:prismarine",
+    DarkPrismarine = "minecraft:dark_prismarine",
+    AmethystBlock = "minecraft:amethyst_block",
+    PurpurBlock = "minecraft:purpur_block",
+    PurpurPillar = "minecraft:purpur_pillar",
+
+    OchreFroglight = "minecraft:ochre_froglight",
+    VerdantFroglight = "minecraft:verdant_froglight",
+    PearlescentFroglight = "minecraft:pearlescent_froglight",
+    SeaLantern = "minecraft:sea_lantern",
 
     WhiteWool = "minecraft:white_wool",
     LightGrayWool = "minecraft:light_gray_wool",
@@ -70,31 +87,66 @@ block_enum!({
     MagentaGlass = "minecraft:magenta_stained_glass",
     PinkGlass = "minecraft:pink_stained_glass",
 
-    WhiteTerracotta = "minecraft:white_glazed_terracotta",
-    LightGrayTerracotta = "minecraft:light_gray_glazed_terracotta",
-    GrayTerracotta = "minecraft:gray_glazed_terracotta",
-    BlackTerracotta = "minecraft:black_glazed_terracotta",
-    BrownTerracotta = "minecraft:brown_glazed_terracotta",
-    RedTerracotta = "minecraft:red_glazed_terracotta",
-    OrangeTerracotta = "minecraft:orange_glazed_terracotta",
-    YellowTerracotta = "minecraft:yellow_glazed_terracotta",
-    LimeTerracotta = "minecraft:lime_glazed_terracotta",
-    GreenTerracotta = "minecraft:green_glazed_terracotta",
-    CyanTerracotta = "minecraft:cyan_glazed_terracotta",
-    LightBlueTerracotta = "minecraft:light_blue_glazed_terracotta",
-    BlueTerracotta = "minecraft:blue_glazed_terracotta",
-    PurpleTerracotta = "minecraft:purple_glazed_terracotta",
-    MagentaTerracotta = "minecraft:magenta_glazed_terracotta",
-    PinkTerracotta = "minecraft:pink_glazed_terracotta",
+    WhiteConcrete = "minecraft:white_concrete",
+    LightGrayConcrete = "minecraft:light_gray_concrete",
+    GrayConcrete = "minecraft:gray_concrete",
+    BlackConcrete = "minecraft:black_concrete",
+    BrownConcrete = "minecraft:brown_concrete",
+    RedConcrete = "minecraft:red_concrete",
+    OrangeConcrete = "minecraft:orange_concrete",
+    YellowConcrete = "minecraft:yellow_concrete",
+    LimeConcrete = "minecraft:lime_concrete",
+    GreenConcrete = "minecraft:green_concrete",
+    CyanConcrete = "minecraft:cyan_concrete",
+    LightBlueConcrete = "minecraft:light_blue_concrete",
+    BlueConcrete = "minecraft:blue_concrete",
+    PurpleConcrete = "minecraft:purple_concrete",
+    MagentaConcrete = "minecraft:magenta_concrete",
+    PinkConcrete = "minecraft:pink_concrete",
 
-    CherryPlanks = "minecraft:cherry_planks",
-    BambooPlanks = "minecraft:bamboo_planks",
-    BirchPlanks = "minecraft:birch_planks",
+    WhiteGlazedTerracotta = "minecraft:white_glazed_terracotta",
+    LightGrayGlazedTerracotta = "minecraft:light_gray_glazed_terracotta",
+    GrayGlazedTerracotta = "minecraft:gray_glazed_terracotta",
+    BlackGlazedTerracotta = "minecraft:black_glazed_terracotta",
+    BrownGlazedTerracotta = "minecraft:brown_glazed_terracotta",
+    RedGlazedTerracotta = "minecraft:red_glazed_terracotta",
+    OrangeGlazedTerracotta = "minecraft:orange_glazed_terracotta",
+    YellowGlazedTerracotta = "minecraft:yellow_glazed_terracotta",
+    LimeGlazedTerracotta = "minecraft:lime_glazed_terracotta",
+    GreenGlazedTerracotta = "minecraft:green_glazed_terracotta",
+    CyanGlazedTerracotta = "minecraft:cyan_glazed_terracotta",
+    LightBlueGlazedTerracotta = "minecraft:light_blue_glazed_terracotta",
+    BlueGlazedTerracotta = "minecraft:blue_glazed_terracotta",
+    PurpleGlazedTerracotta = "minecraft:purple_glazed_terracotta",
+    MagentaGlazedTerracotta = "minecraft:magenta_glazed_terracotta",
+    PinkGlazedTerracotta = "minecraft:pink_glazed_terracotta",
+
+    WhiteTerracotta = "minecraft:white_terracotta",
+    LightGrayTerracotta = "minecraft:light_gray_terracotta",
+    GrayTerracotta = "minecraft:gray_terracotta",
+    BlackTerracotta = "minecraft:black_terracotta",
+    BrownTerracotta = "minecraft:brown_terracotta",
+    RedTerracotta = "minecraft:red_terracotta",
+    OrangeTerracotta = "minecraft:orange_terracotta",
+    YellowTerracotta = "minecraft:yellow_terracotta",
+    LimeTerracotta = "minecraft:lime_terracotta",
+    GreenTerracotta = "minecraft:green_terracotta",
+    CyanTerracotta = "minecraft:cyan_terracotta",
+    LightBlueTerracotta = "minecraft:light_blue_terracotta",
+    BlueTerracotta = "minecraft:blue_terracotta",
+    PurpleTerracotta = "minecraft:purple_terracotta",
+    MagentaTerracotta = "minecraft:magenta_terracotta",
+    PinkTerracotta = "minecraft:pink_terracotta",
+
     OakPlanks = "minecraft:oak_planks",
+    SprucePlanks = "minecraft:spruce_planks",
+    BirchPlanks = "minecraft:birch_planks",
     JunglePlanks = "minecraft:jungle_planks",
     AcaciaPlanks = "minecraft:acacia_planks",
-    SprucePlanks = "minecraft:spruce_planks",
     DarkOakPlanks = "minecraft:dark_oak_planks",
+    MangrovePlanks = "minecraft:mangrove_planks",
+    CherryPlanks = "minecraft:cherry_planks",
+    BambooPlanks = "minecraft:bamboo_planks",
     CrimsonPlanks = "minecraft:crimson_planks",
     WarpedPlanks = "minecraft:warped_planks",
 
@@ -109,8 +161,8 @@ block_enum!({
     AcaciaLog = "minecraft:acacia_log",
     SpruceLog = "minecraft:spruce_log",
     DarkOakLog = "minecraft:dark_oak_log",
-    CrimsonLog = "minecraft:crimson_stem",
-    WarpedLog = "minecraft:warped_stem",
+    CrimsonStem = "minecraft:crimson_stem",
+    WarpedStem = "minecraft:warped_stem",
 
     DarkOakFence = "minecraft:dark_oak_fence",
     CherryFence = "minecraft:cherry_fence",
@@ -142,6 +194,63 @@ block_enum!({
 });
 
 impl MinecraftBlock {
+    pub fn bit_to_block(mut bit: u8) -> MinecraftResult<Self> {
+        let start = match bit {
+            0..16 => MinecraftBlock::WhiteWool as u8,
+            16..32 => {
+                bit -= 16;
+                MinecraftBlock::WhiteConcrete as u8
+            }
+            32..48 => {
+                bit -= 32;
+                MinecraftBlock::WhiteTerracotta as u8
+            }
+            48..64 => {
+                bit -= 48;
+                MinecraftBlock::WhiteGlazedTerracotta as u8
+            }
+            64..75 => {
+                bit -= 64;
+                MinecraftBlock::OakPlanks as u8
+            }
+            _ => unsafe { unreachable_unchecked() },
+        };
+
+        let offset = start + bit;
+        offset
+            .try_into()
+            .map_err(|_| MinecraftError::Custom("Could not convert bit to block".to_string()))
+    }
+
+    pub fn block_to_bit(&self) -> MinecraftResult<u8> {
+        if self.is_wool() {
+            let start = MinecraftBlock::WhiteWool as u8;
+            return Ok(*self as u8 - start);
+        }
+
+        if self.is_concrete() {
+            let start = MinecraftBlock::WhiteConcrete as u8;
+            return Ok(*self as u8 - start + 16);
+        }
+
+        if self.is_terracotta() {
+            let start = MinecraftBlock::WhiteTerracotta as u8;
+            return Ok(*self as u8 - start + 32);
+        }
+
+        if self.is_glazed_terracotta() {
+            let start = MinecraftBlock::WhiteGlazedTerracotta as u8;
+            return Ok(*self as u8 - start + 48);
+        }
+
+        if self.is_planks() {
+            let start = MinecraftBlock::OakPlanks as u8;
+            return Ok(*self as u8 - start + 64);
+        }
+
+        Err(MinecraftError::Custom("Wrong block to bit".to_string()))
+    }
+
     pub const fn is_glass(&self) -> bool {
         matches!(
             self,
@@ -197,8 +306,8 @@ impl MinecraftBlock {
                 | MinecraftBlock::AcaciaLog
                 | MinecraftBlock::SpruceLog
                 | MinecraftBlock::DarkOakLog
-                | MinecraftBlock::CrimsonLog
-                | MinecraftBlock::WarpedLog
+                | MinecraftBlock::CrimsonStem
+                | MinecraftBlock::WarpedStem
         )
     }
 
@@ -232,6 +341,7 @@ impl MinecraftBlock {
                 | MinecraftBlock::BirchPlanks
                 | MinecraftBlock::OakPlanks
                 | MinecraftBlock::JunglePlanks
+                | MinecraftBlock::MangrovePlanks
                 | MinecraftBlock::AcaciaPlanks
                 | MinecraftBlock::SprucePlanks
                 | MinecraftBlock::DarkOakPlanks
@@ -240,7 +350,62 @@ impl MinecraftBlock {
         )
     }
 
-    pub const fn to_digit(&self) -> MinecraftResult<char> {
+    pub const fn is_concrete(&self) -> bool {
+        matches!(
+            self,
+            MinecraftBlock::WhiteConcrete
+                | MinecraftBlock::LightGrayConcrete
+                | MinecraftBlock::GrayConcrete
+                | MinecraftBlock::BlackConcrete
+                | MinecraftBlock::BrownConcrete
+                | MinecraftBlock::RedConcrete
+                | MinecraftBlock::OrangeConcrete
+                | MinecraftBlock::YellowConcrete
+                | MinecraftBlock::LimeConcrete
+                | MinecraftBlock::GreenConcrete
+                | MinecraftBlock::CyanConcrete
+                | MinecraftBlock::LightBlueConcrete
+                | MinecraftBlock::BlueConcrete
+                | MinecraftBlock::PurpleConcrete
+                | MinecraftBlock::MagentaConcrete
+                | MinecraftBlock::PinkConcrete
+        )
+    }
+
+    pub const fn is_glazed_terracotta(&self) -> bool {
+        matches!(
+            self,
+            MinecraftBlock::WhiteGlazedTerracotta
+                | MinecraftBlock::LightGrayGlazedTerracotta
+                | MinecraftBlock::GrayGlazedTerracotta
+                | MinecraftBlock::BlackGlazedTerracotta
+                | MinecraftBlock::BrownGlazedTerracotta
+                | MinecraftBlock::RedGlazedTerracotta
+                | MinecraftBlock::OrangeGlazedTerracotta
+                | MinecraftBlock::YellowGlazedTerracotta
+                | MinecraftBlock::LimeGlazedTerracotta
+                | MinecraftBlock::GreenGlazedTerracotta
+                | MinecraftBlock::CyanGlazedTerracotta
+                | MinecraftBlock::LightBlueGlazedTerracotta
+                | MinecraftBlock::BlueGlazedTerracotta
+                | MinecraftBlock::PurpleGlazedTerracotta
+                | MinecraftBlock::MagentaGlazedTerracotta
+                | MinecraftBlock::PinkGlazedTerracotta
+        )
+    }
+
+    pub const fn is_light(&self) -> bool {
+        matches!(
+            self,
+            MinecraftBlock::OchreFroglight
+                | MinecraftBlock::VerdantFroglight
+                | MinecraftBlock::PearlescentFroglight
+                | MinecraftBlock::Shroomlight
+                | MinecraftBlock::Glowstone
+        )
+    }
+
+    pub const fn to_digit(&self) -> MinecraftResult<u8> {
         let a = *self as u8;
         let b = if self.is_glass() {
             MinecraftBlock::WhiteGlass
@@ -256,10 +421,7 @@ impl MinecraftBlock {
             return Err(MinecraftError::NotDigitBlock(*self));
         } as u8;
 
-        match char::from_digit((a - b) as u32, 16) {
-            Some(v) => Ok(v),
-            None => Err(MinecraftError::FromDigit),
-        }
+        Ok(a - b)
     }
 
     pub const fn dec_digit_to_log(decimal_digit: u8) -> MinecraftBlock {
@@ -272,8 +434,8 @@ impl MinecraftBlock {
             5 => MinecraftBlock::AcaciaLog,
             6 => MinecraftBlock::SpruceLog,
             7 => MinecraftBlock::DarkOakLog,
-            8 => MinecraftBlock::CrimsonLog,
-            9 => MinecraftBlock::WarpedLog,
+            8 => MinecraftBlock::CrimsonStem,
+            9 => MinecraftBlock::WarpedStem,
             // The caller `serialize_f64` provides the guarantee that the decimal digit is within range between 0 and 9
             _ => unsafe { std::hint::unreachable_unchecked() },
         }
@@ -343,5 +505,14 @@ impl MinecraftBlock {
         let lo = MinecraftBlock::hex_digit_to_wool(lo);
 
         [hi, lo]
+    }
+}
+
+#[test]
+fn block_to_bit_test() {
+    for i in 0..75 {
+        let block = MinecraftBlock::bit_to_block(i).unwrap();
+        let bit = block.block_to_bit().unwrap();
+        assert_eq!(bit, i);
     }
 }

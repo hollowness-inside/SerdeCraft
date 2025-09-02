@@ -5,6 +5,22 @@ use tungstenite::{Message, WebSocket};
 
 use crate::{blocks::MinecraftBlock, result::MinecraftError};
 
+macro_rules! number_to_bits {
+    ($value:tt) => {{
+        let mut value = $value;
+        let mut bits: Vec<MinecraftBlock> = Vec::new();
+        while value != 0 {
+            let bit = value.rem_euclid(75);
+            value /= 75;
+
+            let block = MinecraftBlock::bit_to_block(bit as u8)?;
+            bits.push(block);
+        }
+        bits.reverse();
+        bits
+    }};
+}
+
 pub struct MinecraftSerializer {
     socket: WebSocket<TcpStream>,
 }
@@ -37,29 +53,20 @@ impl MinecraftSerializer {
         blocks.iter().try_for_each(|&block| self.place_block(block))
     }
 
-    fn serialize_number(
+    fn serialize_number<T: Into<u128>>(
         &mut self,
-        v: u64,
-        bits: usize,
+        v: T,
+        marker_block: MinecraftBlock,
         signed: bool,
     ) -> Result<(), MinecraftError> {
-        match bits {
-            8 => self.place_block(MinecraftBlock::CoalBlock)?,
-            16 => self.place_block(MinecraftBlock::RawCopperBlock)?,
-            32 => self.place_block(MinecraftBlock::RawIronBlock)?,
-            64 => self.place_block(MinecraftBlock::RawGoldBlock)?,
-            _ => unsafe { std::hint::unreachable_unchecked() },
-        }
-
         if signed {
-            self.place_block(MinecraftBlock::Bricks)?
+            self.place_block(marker_block)?;
         }
 
-        v.to_le_bytes()
-            .into_iter()
-            .take(bits / 8)
-            .flat_map(MinecraftBlock::u8_to_terracotta)
-            .try_for_each(|block| self.place_block(block))
+        let v = v.into();
+        self.place_block(marker_block)?;
+        self.place_blocks(&number_to_bits!(v))?;
+        self.place_block(marker_block)
     }
 }
 
@@ -75,128 +82,141 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     type SerializeStruct = Self;
     type SerializeStructVariant = Self;
 
-    #[inline(always)]
+    #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        let block = match v {
-            true => MinecraftBlock::Glowstone,
-            false => MinecraftBlock::RedstoneLamp,
-        };
-
-        self.place_block(block)
-    }
-
-    #[inline(always)]
-    fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, 8, true)
-    }
-
-    #[inline(always)]
-    fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, 16, true)
-    }
-
-    #[inline(always)]
-    fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, 32, true)
-    }
-
-    #[inline(always)]
-    fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, 64, true)
-    }
-
-    #[inline(always)]
-    fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, 8, false)
-    }
-
-    #[inline(always)]
-    fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, 16, false)
-    }
-
-    #[inline(always)]
-    fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, 32, false)
-    }
-
-    #[inline(always)]
-    fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v, 64, false)
-    }
-
-    #[inline(always)]
-    fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        self.serialize_f64(v as f64)
-    }
-
-    fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        let mut bits = v.to_bits();
-        while bits > 0 {
-            let rem = bits % 10;
-            let block = MinecraftBlock::dec_digit_to_log(rem as u8);
-            self.place_block(block)?;
-            bits /= 10;
+        match v {
+            true => self.place_block(MinecraftBlock::RedstoneBlock),
+            false => self.place_block(MinecraftBlock::RedstoneLamp),
         }
-
-        Ok(())
     }
 
-    fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::CryingObsidian)?;
+    #[inline]
+    fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v as u8, MinecraftBlock::OchreFroglight, true)
+    }
 
-        let blocks = MinecraftBlock::u8_to_wool(v as u8);
-        self.place_blocks(&blocks)
+    #[inline]
+    fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v as u16, MinecraftBlock::VerdantFroglight, true)
+    }
+
+    #[inline]
+    fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v as u32, MinecraftBlock::PearlescentFroglight, true)
+    }
+
+    #[inline]
+    fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v as u64, MinecraftBlock::SeaLantern, true)
+    }
+
+    #[inline]
+    fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v, MinecraftBlock::OchreFroglight, false)
+    }
+
+    #[inline]
+    fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v, MinecraftBlock::VerdantFroglight, false)
+    }
+
+    #[inline]
+    fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v, MinecraftBlock::PearlescentFroglight, false)
+    }
+
+    #[inline]
+    fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v, MinecraftBlock::SeaLantern, false)
+    }
+
+    #[inline]
+    fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
+        let bits = v.to_bits();
+        self.serialize_number(bits, MinecraftBlock::Shroomlight, false)
+    }
+
+    #[inline]
+    fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
+        let bits = v.to_bits();
+        self.serialize_number(bits, MinecraftBlock::Glowstone, false)
+    }
+
+    #[inline]
+    fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
+        self.serialize_number(v as u32, MinecraftBlock::ChiseledDeepslate, false)
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        self.serialize_bytes(v.as_bytes())?;
-        self.place_block(MinecraftBlock::EmeraldBlock)
+        self.place_block(MinecraftBlock::GildedBlackstone)?;
+
+        let blocks: Vec<MinecraftBlock> = v
+            .as_bytes()
+            .iter()
+            .flat_map(|&x| {
+                let bits = number_to_bits!(x);
+                let zero = unsafe { MinecraftBlock::bit_to_block(0).unwrap_unchecked() };
+                let mut padded = vec![zero; 2 - bits.len()];
+                padded.extend(bits);
+                Ok::<Vec<MinecraftBlock>, MinecraftError>(padded)
+            })
+            .flatten()
+            .collect();
+
+        self.place_blocks(&blocks)?;
+        self.place_block(MinecraftBlock::Prismarine)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        let blocks: Vec<_> = v
+        self.place_block(MinecraftBlock::Blackstone)?;
+
+        let blocks: Vec<MinecraftBlock> = v
             .iter()
-            .copied()
-            .flat_map(MinecraftBlock::u8_to_wool)
+            .flat_map(|&x| {
+                let bits = number_to_bits!(x);
+                let zero = MinecraftBlock::bit_to_block(0)?;
+                let mut padded = vec![zero; 2 - bits.len()];
+                padded.extend(bits);
+                Ok::<Vec<MinecraftBlock>, MinecraftError>(padded)
+            })
+            .flatten()
             .collect();
 
-        self.place_blocks(&blocks)
+        self.place_blocks(&blocks)?;
+        self.place_block(MinecraftBlock::Prismarine)
     }
 
-    #[inline(always)]
+    #[inline]
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::Bedrock)
+        self.place_block(MinecraftBlock::CoalBlock)
     }
 
-    #[inline(always)]
+    #[inline]
     fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        self.place_block(MinecraftBlock::RedstoneBlock)?;
         value.serialize(self)
     }
 
+    #[inline]
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
         self.place_block(MinecraftBlock::Bedrock)
     }
 
+    #[inline]
     fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
         self.serialize_unit()
     }
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         variant_index: u32,
-        variant: &'static str,
+        _variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::Obsidian)?;
-        self.place_block(MinecraftBlock::Cobblestone)?;
-        name.serialize(&mut *self)?;
-        variant_index.serialize(&mut *self)?;
-        variant.serialize(&mut *self)
+        self.place_block(MinecraftBlock::OakLog)?;
+        variant_index.serialize(&mut *self)
     }
 
     fn serialize_newtype_struct<T>(
@@ -207,8 +227,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        self.place_block(MinecraftBlock::Obsidian)?;
-        self.place_block(MinecraftBlock::RedstoneBlock)?;
+        self.place_block(MinecraftBlock::SpruceLog)?;
         name.serialize(&mut *self)?;
         value.serialize(&mut *self)
     }
@@ -216,27 +235,27 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
-        _variant_index: u32,
+        variant_index: u32,
         _variant: &'static str,
-        _value: &T,
+        value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: ?Sized + serde::Serialize,
     {
-        todo!()
+        self.place_block(MinecraftBlock::DarkOakLog)?;
+        variant_index.serialize(&mut *self)?;
+        value.serialize(self)
     }
 
-    #[inline(always)]
+    #[inline]
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        self.place_block(MinecraftBlock::Obsidian)?;
-        self.place_block(MinecraftBlock::Bricks)?;
+        self.place_block(MinecraftBlock::CherryLog)?;
         Ok(self)
     }
 
-    #[inline(always)]
+    #[inline]
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        self.place_block(MinecraftBlock::Obsidian)?;
-        self.place_block(MinecraftBlock::Glass)?;
+        self.place_block(MinecraftBlock::CrimsonStem)?;
         Ok(self)
     }
 
@@ -245,8 +264,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        self.place_block(MinecraftBlock::Obsidian)?;
-        self.place_block(MinecraftBlock::BeeNest)?;
+        self.place_block(MinecraftBlock::WarpedStem)?;
         name.serialize(&mut *self)?;
         len.serialize(&mut *self)?;
         Ok(self)
@@ -255,17 +273,18 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     fn serialize_tuple_variant(
         self,
         _name: &'static str,
-        _variant_index: u32,
+        variant_index: u32,
         _variant: &'static str,
-        _len: usize,
+        len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        todo!()
+        self.place_block(MinecraftBlock::PurpurBlock)?;
+        self.serialize_u32(variant_index as u32)?;
+        self.serialize_u32(len as u32)?;
+        Ok(self)
     }
 
-    #[inline(always)]
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        self.place_block(MinecraftBlock::Obsidian)?;
-        self.place_block(MinecraftBlock::Obsidian)?;
+        self.place_block(MinecraftBlock::PurpurPillar)?;
         Ok(self)
     }
 
@@ -274,8 +293,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        self.place_block(MinecraftBlock::Obsidian)?;
-        self.place_block(MinecraftBlock::QuartzBlock)?;
+        self.place_block(MinecraftBlock::GoldBlock)?;
         name.serialize(&mut *self)?;
         len.serialize(&mut *self)?;
         Ok(self)
@@ -284,11 +302,14 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     fn serialize_struct_variant(
         self,
         _name: &'static str,
-        _variant_index: u32,
+        variant_index: u32,
         _variant: &'static str,
-        _len: usize,
+        len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        todo!()
+        self.place_block(MinecraftBlock::DiamondBlock)?;
+        variant_index.serialize(&mut *self)?;
+        len.serialize(&mut *self)?;
+        Ok(self)
     }
 }
 
@@ -306,7 +327,7 @@ impl serde::ser::SerializeSeq for &mut MinecraftSerializer {
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(())
+        self.place_block(MinecraftBlock::DarkPrismarine)
     }
 }
 
@@ -382,7 +403,7 @@ impl serde::ser::SerializeMap for &mut MinecraftSerializer {
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(())
+        self.place_block(MinecraftBlock::AmethystBlock)
     }
 }
 
@@ -401,7 +422,7 @@ impl serde::ser::SerializeStruct for &mut MinecraftSerializer {
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        <Self as serde::ser::SerializeMap>::end(self)
+        self.place_block(MinecraftBlock::EmeraldBlock)
     }
 }
 

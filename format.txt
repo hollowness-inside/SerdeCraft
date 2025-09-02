@@ -1,0 +1,39 @@
+false => #lamp
+true => #redstone block
+
+numbers:
+    signed:
+        bits_8 => #ochre froglight * 2 + ... + #ochre froglight
+        bits_16 => #verdant froglight * 2 + ... + #verdant froglight
+        bits_32 => #pearlscent froglight * 2 + ... + #pearlscent froglight
+        bits_64 => #sea lantern * 2 + ... + #sea lantern
+            where ... = (#wool | #concrete | #terracotta | #glazed terracotta | #planks)
+
+    unsigned:
+        bits_8 => #ochre froglight + ... * 2
+        bits_16 => #verdant froglight + ... * 4
+        bits_32 => #pearlscent froglight + ... * 7
+        bits_64 => #sea lantern + ... * 13
+            where ... = (#concrete | #terracotta | #wool)
+
+    f32 => #shroomlight + (#concrete | #terracotta | #wool) * 7
+    f64 => #glowstone + (#concrete | #terracotta | #wool) * 13
+
+char => #chiseled deepslate + numbers::unsigned::bits_32 + ChiseledDeepslate
+
+bytes => #blackstone + (#concrete | #terracotta | #wool) * 2 * len + #prismarine
+string => #gilded blackstone + (#concrete | #terracotta | #wool) * 2 * len + #prismarine
+none => #block of coal
+some => [unwraped item]
+unit => #bedrock
+unit struct => #bedrock
+unit variant => #oak log + variant_index as u32
+newtype struct => #spruce log + name + value
+newtype variant => #dark oak log + variant index + value
+seq => #cherry log + ... + DarkPrismarine
+tuple => #crimson stem + ... + DarkPrismarine
+tuple struct => #warped stem + ... + DarkPrismarine
+tuple variant => #purpur block + variant index + len + ... + AmethystBlock
+map => #purpur pillar + ... + prismarine
+struct => #gold + ... + EmeraldBlock
+struct variant = #diamond

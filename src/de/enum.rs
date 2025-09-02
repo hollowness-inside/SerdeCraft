@@ -1,19 +1,15 @@
-use serde::de::{EnumAccess, IntoDeserializer, value::StringDeserializer};
+use serde::de::EnumAccess;
 
 use super::{MCVariantAccessor, MinecraftDeserializer};
 use crate::MinecraftError;
 
 pub(super) struct MCEnumAccessor<'de> {
     deserializer: &'de mut MinecraftDeserializer,
-    variant_name: String,
 }
 
 impl<'de> MCEnumAccessor<'de> {
-    pub fn new(deserializer: &'de mut MinecraftDeserializer, variant_name: String) -> Self {
-        MCEnumAccessor {
-            deserializer,
-            variant_name,
-        }
+    pub fn new(deserializer: &'de mut MinecraftDeserializer) -> Self {
+        MCEnumAccessor { deserializer }
     }
 }
 
@@ -25,10 +21,7 @@ impl<'a, 'de> EnumAccess<'de> for MCEnumAccessor<'a> {
     where
         V: serde::de::DeserializeSeed<'de>,
     {
-        let variant_name = self.variant_name.clone();
-        let name_deserializer: StringDeserializer<MinecraftError> =
-            variant_name.into_deserializer();
-        let val = seed.deserialize(name_deserializer)?;
+        let val = seed.deserialize(&mut *self.deserializer)?;
         Ok((val, MCVariantAccessor::new(self.deserializer)))
     }
 }

@@ -1,6 +1,5 @@
 use std::net::TcpStream;
 
-use serde::{Deserialize, de::Visitor};
 use tungstenite::WebSocket;
 
 use crate::{
@@ -8,7 +7,7 @@ use crate::{
     result::{MinecraftError, MinecraftResult},
 };
 
-use super::{MCEnumAccessor, MCMapAccessor, MCSeqAccessor, MCStructAccessor};
+use super::r#enum::MCEnumAccessor;
 
 pub struct MinecraftDeserializer {
     socket: WebSocket<TcpStream>,
@@ -19,7 +18,22 @@ impl<'a> MinecraftDeserializer {
         MinecraftDeserializer { socket }
     }
 
-    fn consume(&mut self) -> MinecraftResult<MinecraftBlock> {
+    pub(super) fn peek(&mut self) -> MinecraftResult<MinecraftBlock> {
+        self.socket
+            .write(tungstenite::Message::Text("peek".into()))?;
+        self.socket.flush()?;
+
+        let response = self.socket.read()?;
+        let text = response.to_text()?;
+
+        text.try_into()
+    }
+
+    pub(super) fn consume(&mut self) -> MinecraftResult<MinecraftBlock> {
+        // if let Some(block) = self.buffer.take() {
+        //     return Ok(block);
+        // }
+
         self.socket
             .write(tungstenite::Message::Text("consume".into()))?;
         self.socket.flush()?;
@@ -43,232 +57,100 @@ impl<'a> MinecraftDeserializer {
         }
     }
 
-    fn parse_number(&mut self, bits: u8) -> MinecraftResult<i64> {
-        let n = bits as usize / 4; // Each hex char represents 4 bits
-
-        let mut array = vec!['0'; n];
-        for item in array.iter_mut() {
-            let block = self.consume()?;
-            let chr = block.to_digit()?;
-            *item = chr;
+    fn parse_number(
+        &mut self,
+        marker_block: MinecraftBlock,
+        signed: bool,
+    ) -> MinecraftResult<u128> {
+        if self.consume()? != marker_block {
+            return Err(MinecraftError::Custom("Expected marker block".to_string()));
         }
 
-        let bits: Vec<u8> = array
-            .chunks_exact(2)
-            .map(|c| format!("{}{}", c[0], c[1]))
-            .flat_map(|x| u8::from_str_radix(&x, 16))
-            .collect();
-
-        // Pad with zeros to make it 8 bytes for i64
-        let mut padded_bits = [0u8; 8];
-        for (i, &byte) in bits.iter().take(8).enumerate() {
-            padded_bits[i] = byte;
+        if signed {
+            if self.consume()? != marker_block {
+                return Err(MinecraftError::Custom("Expected marker block".to_string()));
+            }
         }
 
-        let bits = i64::from_le_bytes(padded_bits);
-        Ok(bits)
-    }
-
-    fn parse_f64(&mut self) -> MinecraftResult<f64> {
-        let mut digits = Vec::new();
-
+        let mut result = 0;
         loop {
             let block = self.consume()?;
-            if block.is_log() {
-                let chr = block.to_digit()?;
-                digits.push(chr);
-            } else {
-                self.rewind()?;
+            if block == marker_block {
                 break;
             }
+
+            let bit = block.block_to_bit()? as u128;
+            result *= 75;
+            result += bit;
         }
 
-        let uvs = digits.iter().rev().collect::<String>();
-        let bits: u64 = uvs.parse()?;
-        let value = f64::from_bits(bits);
-        Ok(value)
+        Ok(result)
     }
 
-    fn parse_u8(&mut self) -> MinecraftResult<u8> {
-        let mut src = String::with_capacity(2);
-        src.push(self.consume()?.to_digit()?);
-        src.push(self.consume()?.to_digit()?);
-        Ok(u8::from_str_radix(&src, 16)?)
-    }
+    fn parse_a_number(&mut self) -> Result<u128, MinecraftError> {
+        let marker_block = self.consume()?;
+        let signed_block = self.consume()?;
 
-    fn u8_from_blocks(block_1: MinecraftBlock, block_2: MinecraftBlock) -> MinecraftResult<u8> {
-        let mut src = String::with_capacity(2);
-        src.push(block_1.to_digit()?);
-        src.push(block_2.to_digit()?);
-        Ok(u8::from_str_radix(&src, 16)?)
-    }
+        let mut result = 0;
 
-    // Consecutive blocks of wool
-    fn parse_bytes(&mut self) -> MinecraftResult<Vec<u8>> {
-        let mut bytes = Vec::new();
-        let mut mem = None;
+        if marker_block != signed_block {
+            result += signed_block.block_to_bit()? as u128;
+        }
 
         loop {
             let block = self.consume()?;
-            match (block.is_wool(), mem) {
-                (true, None) => {
-                    mem = Some(block);
-                }
-                (true, Some(prev)) => {
-                    let byte = Self::u8_from_blocks(prev, block)?;
-                    bytes.push(byte);
-                    mem = None;
-                }
-                (false, None) => {
-                    // Rewind the non-wool block since we don't need it
-                        self.rewind()?;
-                        break;
-                }
-                (false, Some(_)) => {
-                    return Err(MinecraftError::InvalidWoolSequence);
-                }
+            if block == marker_block {
+                break;
             }
+
+            let bit = block.block_to_bit()? as u128;
+            result *= 75;
+            result += bit;
+        }
+
+        Ok(result)
+    }
+
+    fn parse_bytes(&mut self, marker_block: MinecraftBlock) -> Result<Vec<u8>, MinecraftError> {
+        if self.consume()? != marker_block {
+            return Err(MinecraftError::Placeholder);
+        }
+
+        let mut bytes = Vec::new();
+        loop {
+            let b1 = self.consume()?;
+            if b1 == MinecraftBlock::Prismarine {
+                break;
+            }
+
+            let b2 = self.consume()?;
+            if b2 == MinecraftBlock::Prismarine {
+                return Err(MinecraftError::Placeholder);
+            }
+
+            let v = b1.block_to_bit()? as u32 * 75 + b2.block_to_bit()? as u32;
+            let v = v as u8;
+            bytes.push(v);
         }
 
         Ok(bytes)
     }
 
-    fn parse_struct_sophisticated<V: Visitor<'a>>(
-        &mut self,
-        name: &'static str,
-        _fields: &'static [&'static str],
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        let name_actual = String::deserialize(&mut *self)?;
-        if name_actual != name {
-            return Err(MinecraftError::ValueMismatch {
-                expected: name.to_string(),
-                found: name_actual,
-            });
-        }
-
-        let len = usize::deserialize(&mut *self)?;
-        visitor.visit_map(MCStructAccessor::new(self, len))
-    }
-
-    fn parse_tuple_struct_sophisticated<V: Visitor<'a>>(
-        &mut self,
-        name: &'static str,
-        len: usize,
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        let name_actual = String::deserialize(&mut *self)?;
-        if name_actual != name {
-            return Err(MinecraftError::ValueMismatch {
-                expected: name.to_string(),
-                found: name_actual,
-            });
-        }
-
-        let len_actual = usize::deserialize(&mut *self)?;
-        if len_actual != len {
-            return Err(MinecraftError::ValueMismatch {
-                expected: len.to_string(),
-                found: len_actual.to_string(),
-            });
-        }
-
-        visitor.visit_seq(MCSeqAccessor::new(self))
-    }
-
-    fn parse_struct<V: Visitor<'a>>(
-        &mut self,
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        let _name = String::deserialize(&mut *self)?;
-        let len = usize::deserialize(&mut *self)?;
-        visitor.visit_map(MCStructAccessor::new(self, len))
-    }
-
-    fn parse_seq<V: Visitor<'a>>(
-        &mut self,
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        let _enum_name = String::deserialize(&mut *self)?;
-        let _variant_index = u32::deserialize(&mut *self)?;
-        let variant_name = String::deserialize(&mut *self)?;
-        visitor.visit_enum(MCEnumAccessor::new(self, variant_name))
-    }
-
-    fn parse_unit_variant<V: Visitor<'a>>(
-        &mut self,
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        todo!()
-    }
-
-    fn parse_newtype_struct<V: Visitor<'a>>(
-        &mut self,
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        todo!()
-    }
-
-    fn parse_tuple<V: Visitor<'a>>(
-        &mut self,
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        todo!()
-    }
-
-    fn parse_tuple_struct<V: Visitor<'a>>(
-        &mut self,
-        visitor: V,
-    ) -> MinecraftResult<<V as Visitor<'a>>::Value> {
-        todo!()
-    }
-
-    fn handle_obsidian<V>(&mut self, visitor: V) -> MinecraftResult<<V as Visitor<'a>>::Value>
-    where
-        V: Visitor<'a>,
-    {
-        match self.consume()? {
-            MinecraftBlock::Obsidian => visitor.visit_map(MCMapAccessor::new(self)),
-            MinecraftBlock::QuartzBlock => self.parse_struct(visitor),
-            MinecraftBlock::Cobblestone => self.parse_unit_variant(visitor),
-            MinecraftBlock::RedstoneBlock => self.parse_newtype_struct(visitor),
-            MinecraftBlock::Bricks => self.parse_seq(visitor),
-            MinecraftBlock::Glass => self.parse_tuple(visitor),
-            MinecraftBlock::BeeNest => self.parse_tuple_struct(visitor),
-            _ => Err(MinecraftError::InvalidBlockSequence(
-                "Obsidian sequence".to_string(),
-            )),
-        }
+    fn parse_string(&mut self) -> Result<String, MinecraftError> {
+        let bytes = self.parse_bytes(MinecraftBlock::GildedBlackstone)?;
+        let string = String::from_utf8(bytes)?;
+        Ok(string)
     }
 }
 
 impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     type Error = MinecraftError;
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let block = self.consume()?;
-        match block {
-            MinecraftBlock::Glowstone | MinecraftBlock::RedstoneLamp => {
-                self.rewind()?;
-                self.deserialize_bool(visitor)
-            }
-            MinecraftBlock::Obsidian => self.handle_obsidian(visitor),
-            b if b.is_log() => {
-                self.rewind()?;
-                visitor.visit_f64(self.parse_f64()?)
-            }
-            b if b.is_wool() => {
-                self.rewind()?;
-                self.deserialize_bytes(visitor)
-            }
-            _ => Err(MinecraftError::TypeMismatch {
-                expected: "known type".to_string(),
-                found: "unknown type".to_string(),
-            }),
-        }
+        unimplemented!()
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -276,183 +158,115 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         V: serde::de::Visitor<'de>,
     {
         match self.consume()? {
-            MinecraftBlock::Glowstone => visitor.visit_bool(true),
+            MinecraftBlock::RedstoneBlock => visitor.visit_bool(true),
             MinecraftBlock::RedstoneLamp => visitor.visit_bool(false),
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "Glowstone or RedstoneLamp".to_string(),
-                found: other.to_string(),
-            }),
+            _ => Err(MinecraftError::Custom("Wrong boolean block".to_string())),
         }
     }
 
+    #[inline]
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let first = self.consume()?;
-        let second = self.consume()?;
-        match (first, second) {
-            (MinecraftBlock::CoalBlock, MinecraftBlock::Bricks) => {
-                let n = self.parse_number(8)? as i8;
-                visitor.visit_i8(n)
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "CoalBlock followed by Bricks".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::OchreFroglight, true)?;
+        visitor.visit_i8(number as i8)
     }
 
+    #[inline]
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let first = self.consume()?;
-        let second = self.consume()?;
-        match (first, second) {
-            (MinecraftBlock::RawCopperBlock, MinecraftBlock::Bricks) => {
-                let n = self.parse_number(16)? as i16;
-                visitor.visit_i16(n)
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "RawCopperBlock followed by Bricks".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::VerdantFroglight, true)?;
+        visitor.visit_i16(number as i16)
     }
 
+    #[inline]
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let first = self.consume()?;
-        let second = self.consume()?;
-        match (first, second) {
-            (MinecraftBlock::RawIronBlock, MinecraftBlock::Bricks) => {
-                let n = self.parse_number(32)? as i32;
-                visitor.visit_i32(n)
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "RawIronBlock followed by Bricks".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::PearlescentFroglight, true)?;
+        visitor.visit_i32(number as i32)
     }
 
+    #[inline]
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let first = self.consume()?;
-        let second = self.consume()?;
-        match (first, second) {
-            (MinecraftBlock::RawGoldBlock, MinecraftBlock::Bricks) => {
-                let n = self.parse_number(64)?;
-                visitor.visit_i64(n)
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "RawGoldBlock followed by Bricks".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::SeaLantern, true)?;
+        visitor.visit_i64(number as i64)
     }
 
+    #[inline]
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let first = self.consume()?;
-        match first {
-            MinecraftBlock::CoalBlock => {
-                let n = self.parse_number(8)? as u8;
-                visitor.visit_u8(n)
-            }
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "CoalBlock".to_string(),
-                found: other.to_string(),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::OchreFroglight, false)?;
+        visitor.visit_u8(number as u8)
     }
 
+    #[inline]
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.consume()? {
-            MinecraftBlock::RawCopperBlock => {
-                let n = self.parse_number(16)? as u16;
-                visitor.visit_u16(n)
-            }
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "RawCopperBlock".to_string(),
-                found: other.to_string(),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::VerdantFroglight, false)?;
+        visitor.visit_u16(number as u16)
     }
 
+    #[inline]
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.consume()? {
-            MinecraftBlock::RawIronBlock => {
-                let n = self.parse_number(32)? as u32;
-                visitor.visit_u32(n)
-            }
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "RawIronBlock".to_string(),
-                found: other.to_string(),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::PearlescentFroglight, false)?;
+        visitor.visit_u32(number as u32)
     }
 
+    #[inline]
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.consume()? {
-            MinecraftBlock::RawGoldBlock => {
-                let n = self.parse_number(64)? as u64;
-                visitor.visit_u64(n)
-            }
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "RawGoldBlock".to_string(),
-                found: other.to_string(),
-            }),
-        }
+        let number = self.parse_number(MinecraftBlock::SeaLantern, false)?;
+        visitor.visit_u64(number as u64)
     }
 
+    #[inline]
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        self.deserialize_f64(visitor)
+        let bits = self.parse_number(MinecraftBlock::Shroomlight, false)? as u32;
+        let v = f32::from_bits(bits);
+        visitor.visit_f32(v)
     }
 
+    #[inline]
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let value = self.parse_f64()?;
-        visitor.visit_f64(value)
+        let bits = self.parse_number(MinecraftBlock::Glowstone, false)? as u64;
+        let v = f64::from_bits(bits);
+        visitor.visit_f64(v)
     }
 
+    #[inline]
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.consume()? {
-            MinecraftBlock::CryingObsidian => {
-                let value = self.parse_u8()?;
-                visitor.visit_char(value as char)
-            }
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "CryingObsidian".to_string(),
-                found: other.to_string(),
-            }),
-        }
+        let raw = self.parse_number(MinecraftBlock::ChiseledDeepslate, false)? as u32;
+        let c = char::from_u32(raw).ok_or_else(|| MinecraftError::Placeholder)?;
+        visitor.visit_char(c)
     }
 
+    #[inline(always)]
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
@@ -460,62 +274,49 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         self.deserialize_string(visitor)
     }
 
+    #[inline]
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let value = self.parse_bytes()?;
-        if self.consume()? != MinecraftBlock::EmeraldBlock {
-            return Err(MinecraftError::UnexpectedBlock {
-                expected: "EmeraldBlock".to_string(),
-                found: "other block".to_string(),
-            });
-        }
-
-        let value = String::from_utf8(value)?;
-        visitor.visit_string(value)
+        let string = self.parse_string()?;
+        visitor.visit_string(string)
     }
 
+    #[inline(always)]
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let value = self.parse_bytes()?;
-        visitor.visit_bytes(&value)
+        self.deserialize_byte_buf(visitor)
     }
 
+    #[inline]
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        self.deserialize_bytes(visitor)
+        let bytes = self.parse_bytes(MinecraftBlock::Blackstone)?;
+        visitor.visit_byte_buf(bytes)
     }
 
+    #[inline(always)]
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.consume()? {
-            MinecraftBlock::Bedrock => visitor.visit_none(),
-            MinecraftBlock::RedstoneBlock => visitor.visit_some(self),
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "Bedrock or RedstoneBlock".to_string(),
-                found: other.to_string(),
-            }),
-        }
+        self.deserialize_any(visitor)
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        match self.consume()? {
-            MinecraftBlock::Bedrock => visitor.visit_unit(),
-            other => Err(MinecraftError::UnexpectedBlock {
-                expected: "Bedrock".to_string(),
-                found: other.to_string(),
-            }),
+        if self.consume()? != MinecraftBlock::Bedrock {
+            return Err(MinecraftError::Placeholder);
         }
+
+        visitor.visit_unit()
     }
 
     fn deserialize_unit_struct<V>(
@@ -531,36 +332,35 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
 
     fn deserialize_newtype_struct<V>(
         self,
-        _name: &'static str,
+        name: &'static str,
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let b1 = self.consume()?;
-        let b2 = self.consume()?;
-        match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::RedstoneBlock) => {
-                visitor.visit_newtype_struct(self)
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "Obsidian followed by Glass".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
+        if self.consume()? != MinecraftBlock::SpruceLog {
+            return Err(MinecraftError::Placeholder);
         }
+
+        let actual_name = self.parse_string()?;
+        assert_eq!(actual_name, name);
+
+        visitor.visit_newtype_struct(self)
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        let b1 = self.consume()?;
-        let b2 = self.consume()?;
-        match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::Bricks) => {
-                visitor.visit_seq(MCSeqAccessor::new(self))
-            }
-            _ => Err(MinecraftError::Custom("Expected seq".to_string())),
+        if self.consume()? != MinecraftBlock::CherryLog {
+            return Err(MinecraftError::Placeholder);
+        }
+
+        let seq = visitor.visit_seq(&mut *self);
+
+        match self.consume()? {
+            MinecraftBlock::DarkPrismarine => seq,
+            _ => Err(MinecraftError::Placeholder),
         }
     }
 
@@ -568,16 +368,15 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        let b1 = self.consume()?;
-        let b2 = self.consume()?;
-        match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::Glass) => {
-                visitor.visit_seq(MCSeqAccessor::new(self))
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "Obsidian followed by Glass".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
+        if self.consume()? != MinecraftBlock::CrimsonStem {
+            return Err(MinecraftError::Placeholder);
+        }
+
+        let tuple = visitor.visit_seq(&mut *self);
+
+        match self.consume()? {
+            MinecraftBlock::DarkPrismarine => tuple,
+            _ => Err(MinecraftError::Placeholder),
         }
     }
 
@@ -590,16 +389,21 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        let b1 = self.consume()?;
-        let b2 = self.consume()?;
-        match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::BeeNest) => {
-                self.parse_tuple_struct_sophisticated(name, len, visitor)
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "Obsidian followed by Glass".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
+        if self.consume()? != MinecraftBlock::WarpedStem {
+            return Err(MinecraftError::Placeholder);
+        }
+
+        let actual_name = self.parse_string()?;
+        assert_eq!(name, actual_name);
+
+        let actual_len = self.parse_a_number()? as usize;
+        assert_eq!(actual_len, len);
+
+        let tuple_struct = visitor.visit_seq(&mut *self);
+
+        match self.consume()? {
+            MinecraftBlock::DarkPrismarine => tuple_struct,
+            _ => Err(MinecraftError::Placeholder),
         }
     }
 
@@ -607,16 +411,16 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        let b1 = self.consume()?;
-        let b2 = self.consume()?;
-        match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::Obsidian) => {
-                visitor.visit_map(MCMapAccessor::new(self))
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "Obsidian followed by Obsidian".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
+        if self.consume()? != MinecraftBlock::PurpurPillar {
+            return Err(MinecraftError::Placeholder);
+        }
+
+        let map = visitor.visit_map(&mut *self);
+
+        self.rewind()?;
+        match self.consume()? {
+            MinecraftBlock::AmethystBlock => map,
+            _ => Err(MinecraftError::Placeholder),
         }
     }
 
@@ -629,16 +433,21 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        let b1 = self.consume()?;
-        let b2 = self.consume()?;
-        match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::QuartzBlock) => {
-                self.parse_struct_sophisticated(name, fields, visitor)
-            }
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "Obsidian followed by QuartzBlock".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
+        if self.consume()? != MinecraftBlock::GoldBlock {
+            return Err(MinecraftError::Placeholder);
+        }
+
+        let actual_name = self.parse_string()?;
+        assert_eq!(name, actual_name);
+
+        let actual_len = self.parse_a_number()? as usize;
+        assert_eq!(actual_len, fields.len());
+
+        let map = visitor.visit_map(&mut *self);
+
+        match self.consume()? {
+            MinecraftBlock::EmeraldBlock => map,
+            _ => Err(MinecraftError::Placeholder),
         }
     }
 
@@ -651,28 +460,28 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        let b1 = self.consume()?;
-        let b2 = self.consume()?;
-        match (b1, b2) {
-            (MinecraftBlock::Obsidian, MinecraftBlock::Cobblestone) => self.parse_seq(visitor),
-            (other1, other2) => Err(MinecraftError::UnexpectedBlock {
-                expected: "Obsidian followed by Cobblestone".to_string(),
-                found: format!("{}, {}", other1, other2),
-            }),
-        }
+        visitor.visit_enum(MCEnumAccessor::new(self))
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        self.deserialize_str(visitor)
+        match self.peek()? {
+            MinecraftBlock::GildedBlackstone => self.deserialize_string(visitor),
+            MinecraftBlock::OakLog => {
+                self.consume()?;
+                let number = self.parse_a_number()? as u32;
+                visitor.visit_u32(number)
+            }
+            _ => unimplemented!(),
+        }
     }
 
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        self.deserialize_any(visitor)
+        todo!()
     }
 }

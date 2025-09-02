@@ -76,15 +76,15 @@ struct TestStructure {
     unit_variant: UnitVariants,
 
     newtype_struct: NewtypeStruct,
-    // newtype_variant: NewtypeVariant,
+    newtype_variant: NewtypeVariant,
     seq: Vec<f32>,
     tuple: (i8, u32, f64),
     tuple_struct: TupleStruct,
 
-    // tuple_variant: TupleVariant,
+    tuple_variant: TupleVariant,
     map: HashMap<String, i32>,
     struct_v: SomeStruct,
-    // struct_variant: StructVariant,
+    struct_variant: StructVariant,
 }
 
 fn main() -> MinecraftResult<()> {
@@ -122,6 +122,13 @@ fn main() -> MinecraftResult<()> {
             health: 76.32,
             money: 132421.2,
         },
+        newtype_variant: NewtypeVariant::Byte(123),
+        struct_variant: StructVariant::Rgb {
+            r: 255,
+            g: 255,
+            b: 127,
+        },
+        tuple_variant: TupleVariant::Rgb(0, 1, 2),
     };
 
     let server = TcpListener::bind("127.0.0.1:8765")?;

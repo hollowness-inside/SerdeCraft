@@ -104,6 +104,9 @@ pub enum MinecraftError {
     // Generic error for backward compatibility
     #[error("{0}")]
     Custom(String),
+
+    #[error("Placehodler error")]
+    Placeholder
 }
 
 impl From<tungstenite::Error> for MinecraftError {
