@@ -36,20 +36,9 @@ impl MinecraftSerializer {
     }
 
     pub(super) fn place_block(&mut self, block: MinecraftBlock) -> Result<(), MinecraftError> {
-        let block_name = block.to_string();
-        let message = Message::Text(block_name.into());
-        self.socket
-            .send(message)
-            .map_err(|e| MinecraftError::WebSocketSend {
-                message: "Failed to send block placement message".to_string(),
-                source: Box::new(e),
-            })?;
-        self.socket
-            .read()
-            .map_err(|e| MinecraftError::WebSocketReceive {
-                message: "Failed to receive block placement confirmation".to_string(),
-                source: Box::new(e),
-            })?;
+        let message = Message::Text(block.to_string().into());
+        self.socket.send(message)?;
+        self.socket.read()?;
         Ok(())
     }
 
