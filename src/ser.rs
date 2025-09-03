@@ -13,8 +13,9 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
     let mut value = value.into();
 
     if value == 0 {
-        Ok(vec![MinecraftBlock::bit_to_block(0)?])
-    } else {
+        return Ok(vec![MinecraftBlock::bit_to_block(0)?]);
+    }
+
         let mut bits: Vec<MinecraftBlock> = Vec::new();
         while value != 0 {
             let bit = value % BASE as u128;
@@ -25,7 +26,6 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
         }
         bits.reverse();
         Ok(bits)
-    }
 }
 
 pub struct MinecraftSerializer {
@@ -67,19 +67,21 @@ impl MinecraftSerializer {
     }
 
     fn write_bytes(&mut self, v: &[u8]) -> MinecraftResult<()> {
-        let blocks: Vec<MinecraftBlock> = v
-            .iter()
-            .map(|&x| {
-                let bits = number_to_bits(x)?;
-                let zero = MinecraftBlock::bit_to_block(0)?;
-                let mut padded = vec![zero; 2 - bits.len()];
-                padded.extend(bits);
-                Ok::<Vec<MinecraftBlock>, MinecraftError>(padded)
-            })
-            .collect::<MinecraftResult<Vec<_>>>()?
-            .into_iter()
-            .flatten()
-            .collect();
+        let zero_block = MinecraftBlock::bit_to_block(0)?;
+
+        let mut blocks = Vec::with_capacity(2 * v.len());
+
+        for &byte in v {
+            let bits = number_to_bits(byte)?;
+            match bits.len() {
+                1 => {
+                    blocks.push(zero_block);
+                    blocks.push(bits[0]);
+                }
+                2 => blocks.extend_from_slice(&bits),
+                _ => unreachable!(),
+            }
+        }
 
         self.place_blocks(&blocks)
     }
