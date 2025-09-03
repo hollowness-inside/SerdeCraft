@@ -3,7 +3,9 @@ use std::net::TcpStream;
 use serde::Serialize;
 use tungstenite::{Message, WebSocket};
 
-use crate::{blocks::MinecraftBlock, option_ser::OptionSerializer, result::MinecraftError};
+use crate::{
+    MinecraftResult, blocks::MinecraftBlock, option_ser::OptionSerializer, result::MinecraftError,
+};
 
 macro_rules! number_to_bits {
     ($value:tt) => {{
@@ -72,6 +74,24 @@ impl MinecraftSerializer {
         let v = v.into();
         self.place_blocks(&number_to_bits!(v))?;
         self.place_block(marker_block)
+    }
+
+    fn write_bytes(&mut self, v: &[u8]) -> MinecraftResult<()> {
+        let blocks: Vec<MinecraftBlock> = v
+            .iter()
+            .map(|&x| {
+                let bits = number_to_bits!(x);
+                let zero = MinecraftBlock::bit_to_block(0)?;
+                let mut padded = vec![zero; 2 - bits.len()];
+                padded.extend(bits);
+                Ok::<Vec<MinecraftBlock>, MinecraftError>(padded)
+            })
+            .collect::<MinecraftResult<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect();
+
+        self.place_blocks(&blocks)
     }
 }
 
@@ -170,40 +190,13 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
         self.place_block(MinecraftBlock::GildedBlackstone)?;
-
-        let blocks: Vec<MinecraftBlock> = v
-            .as_bytes()
-            .iter()
-            .flat_map(|&x| {
-                let bits = number_to_bits!(x);
-                let zero = MinecraftBlock::bit_to_block(0).unwrap();
-                let mut padded = vec![zero; 2 - bits.len()];
-                padded.extend(bits);
-                Ok::<Vec<MinecraftBlock>, MinecraftError>(padded)
-            })
-            .flatten()
-            .collect();
-
-        self.place_blocks(&blocks)?;
+        self.write_bytes(v.as_bytes())?;
         self.place_block(MinecraftBlock::Prismarine)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
         self.place_block(MinecraftBlock::Blackstone)?;
-
-        let blocks: Vec<MinecraftBlock> = v
-            .iter()
-            .flat_map(|&x| {
-                let bits = number_to_bits!(x);
-                let zero = MinecraftBlock::bit_to_block(0)?;
-                let mut padded = vec![zero; 2 - bits.len()];
-                padded.extend(bits);
-                Ok::<Vec<MinecraftBlock>, MinecraftError>(padded)
-            })
-            .flatten()
-            .collect();
-
-        self.place_blocks(&blocks)?;
+        self.write_bytes(v)?;
         self.place_block(MinecraftBlock::Prismarine)
     }
 
