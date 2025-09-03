@@ -71,22 +71,22 @@ block_enum!({
     MagentaWool = "minecraft:magenta_wool",
     PinkWool = "minecraft:pink_wool",
 
-    WhiteGlass = "minecraft:white_stained_glass",
-    LightGrayGlass = "minecraft:light_gray_stained_glass",
-    GrayGlass = "minecraft:gray_stained_glass",
-    BlackGlass = "minecraft:black_stained_glass",
-    BrownGlass = "minecraft:brown_stained_glass",
-    RedGlass = "minecraft:red_stained_glass",
-    OrangeGlass = "minecraft:orange_stained_glass",
-    YellowGlass = "minecraft:yellow_stained_glass",
-    LimeGlass = "minecraft:lime_stained_glass",
-    GreenGlass = "minecraft:green_stained_glass",
-    CyanGlass = "minecraft:cyan_stained_glass",
-    LightBlueGlass = "minecraft:light_blue_stained_glass",
-    BlueGlass = "minecraft:blue_stained_glass",
-    PurpleGlass = "minecraft:purple_stained_glass",
-    MagentaGlass = "minecraft:magenta_stained_glass",
-    PinkGlass = "minecraft:pink_stained_glass",
+    WhiteStainedGlass = "minecraft:white_stained_glass",
+    LightGrayStainedGlass = "minecraft:light_gray_stained_glass",
+    GrayStainedGlass = "minecraft:gray_stained_glass",
+    BlackStainedGlass = "minecraft:black_stained_glass",
+    BrownStainedGlass = "minecraft:brown_stained_glass",
+    RedStainedGlass = "minecraft:red_stained_glass",
+    OrangeStainedGlass = "minecraft:orange_stained_glass",
+    YellowStainedGlass = "minecraft:yellow_stained_glass",
+    LimeStainedGlass = "minecraft:lime_stained_glass",
+    GreenStainedGlass = "minecraft:green_stained_glass",
+    CyanStainedGlass = "minecraft:cyan_stained_glass",
+    LightBlueStainedGlass = "minecraft:light_blue_stained_glass",
+    BlueStainedGlass = "minecraft:blue_stained_glass",
+    PurpleStainedGlass = "minecraft:purple_stained_glass",
+    MagentaStainedGlass = "minecraft:magenta_stained_glass",
+    PinkStainedGlass = "minecraft:pink_stained_glass",
 
     WhiteConcrete = "minecraft:white_concrete",
     LightGrayConcrete = "minecraft:light_gray_concrete",
@@ -214,6 +214,10 @@ impl MinecraftBlock {
                 bit -= 64;
                 MinecraftBlock::OakPlanks as u8
             }
+            75..91 => {
+                bit -= 75;
+                MinecraftBlock::WhiteStainedGlass as u8
+            }
             _ => unsafe { unreachable_unchecked() },
         };
 
@@ -249,6 +253,11 @@ impl MinecraftBlock {
             return Ok(*self as u8 - start + 64);
         }
 
+        if self.is_glass() {
+            let start = MinecraftBlock::WhiteStainedGlass as u8;
+            return Ok(*self as u8 - start + 75);
+        }
+
         Err(MinecraftError::Custom(format!(
             "Wrong block to bit: {}",
             self
@@ -258,22 +267,22 @@ impl MinecraftBlock {
     pub const fn is_glass(&self) -> bool {
         matches!(
             self,
-            MinecraftBlock::WhiteGlass
-                | MinecraftBlock::LightGrayGlass
-                | MinecraftBlock::GrayGlass
-                | MinecraftBlock::BlackGlass
-                | MinecraftBlock::BrownGlass
-                | MinecraftBlock::RedGlass
-                | MinecraftBlock::OrangeGlass
-                | MinecraftBlock::YellowGlass
-                | MinecraftBlock::LimeGlass
-                | MinecraftBlock::GreenGlass
-                | MinecraftBlock::CyanGlass
-                | MinecraftBlock::LightBlueGlass
-                | MinecraftBlock::BlueGlass
-                | MinecraftBlock::PurpleGlass
-                | MinecraftBlock::MagentaGlass
-                | MinecraftBlock::PinkGlass
+            MinecraftBlock::WhiteStainedGlass
+                | MinecraftBlock::LightGrayStainedGlass
+                | MinecraftBlock::GrayStainedGlass
+                | MinecraftBlock::BlackStainedGlass
+                | MinecraftBlock::BrownStainedGlass
+                | MinecraftBlock::RedStainedGlass
+                | MinecraftBlock::OrangeStainedGlass
+                | MinecraftBlock::YellowStainedGlass
+                | MinecraftBlock::LimeStainedGlass
+                | MinecraftBlock::GreenStainedGlass
+                | MinecraftBlock::CyanStainedGlass
+                | MinecraftBlock::LightBlueStainedGlass
+                | MinecraftBlock::BlueStainedGlass
+                | MinecraftBlock::PurpleStainedGlass
+                | MinecraftBlock::MagentaStainedGlass
+                | MinecraftBlock::PinkStainedGlass
         )
     }
 
@@ -408,113 +417,11 @@ impl MinecraftBlock {
                 | MinecraftBlock::Glowstone
         )
     }
-
-    pub const fn to_digit(&self) -> MinecraftResult<u8> {
-        let a = *self as u8;
-        let b = if self.is_glass() {
-            MinecraftBlock::WhiteGlass
-        } else if self.is_log() {
-            MinecraftBlock::CherryLog
-        } else if self.is_terracotta() {
-            MinecraftBlock::WhiteTerracotta
-        } else if self.is_wool() {
-            MinecraftBlock::WhiteWool
-        } else if self.is_planks() {
-            MinecraftBlock::CherryPlanks
-        } else {
-            return Err(MinecraftError::NotDigitBlock(*self));
-        } as u8;
-
-        Ok(a - b)
-    }
-
-    pub const fn dec_digit_to_log(decimal_digit: u8) -> MinecraftBlock {
-        match decimal_digit {
-            0 => MinecraftBlock::CherryLog,
-            1 => MinecraftBlock::BambooLog,
-            2 => MinecraftBlock::BirchLog,
-            3 => MinecraftBlock::OakLog,
-            4 => MinecraftBlock::JungleLog,
-            5 => MinecraftBlock::AcaciaLog,
-            6 => MinecraftBlock::SpruceLog,
-            7 => MinecraftBlock::DarkOakLog,
-            8 => MinecraftBlock::CrimsonStem,
-            9 => MinecraftBlock::WarpedStem,
-            // The caller `serialize_f64` provides the guarantee that the decimal digit is within range between 0 and 9
-            _ => unsafe { std::hint::unreachable_unchecked() },
-        }
-    }
-
-    const fn hex_digit_to_terracotta(hex_digit: u8) -> MinecraftBlock {
-        match hex_digit {
-            0 => MinecraftBlock::WhiteTerracotta,
-            1 => MinecraftBlock::LightGrayTerracotta,
-            2 => MinecraftBlock::GrayTerracotta,
-            3 => MinecraftBlock::BlackTerracotta,
-            4 => MinecraftBlock::BrownTerracotta,
-            5 => MinecraftBlock::RedTerracotta,
-            6 => MinecraftBlock::OrangeTerracotta,
-            7 => MinecraftBlock::YellowTerracotta,
-            8 => MinecraftBlock::LimeTerracotta,
-            9 => MinecraftBlock::GreenTerracotta,
-            10 => MinecraftBlock::CyanTerracotta,
-            11 => MinecraftBlock::LightBlueTerracotta,
-            12 => MinecraftBlock::BlueTerracotta,
-            13 => MinecraftBlock::PurpleTerracotta,
-            14 => MinecraftBlock::MagentaTerracotta,
-            15 => MinecraftBlock::PinkTerracotta,
-            // Callers guarantee that the digit is between 0 and 15
-            _ => unsafe { std::hint::unreachable_unchecked() },
-        }
-    }
-
-    pub const fn u8_to_terracotta(v: u8) -> [MinecraftBlock; 2] {
-        let hi = (v >> 4) & 0x0F;
-        let lo = v & 0x0F;
-
-        let hi = MinecraftBlock::hex_digit_to_terracotta(hi);
-        let lo = MinecraftBlock::hex_digit_to_terracotta(lo);
-
-        [hi, lo]
-    }
-
-    const fn hex_digit_to_wool(hex_digit: u8) -> MinecraftBlock {
-        match hex_digit {
-            0 => MinecraftBlock::WhiteWool,
-            1 => MinecraftBlock::LightGrayWool,
-            2 => MinecraftBlock::GrayWool,
-            3 => MinecraftBlock::BlackWool,
-            4 => MinecraftBlock::BrownWool,
-            5 => MinecraftBlock::RedWool,
-            6 => MinecraftBlock::OrangeWool,
-            7 => MinecraftBlock::YellowWool,
-            8 => MinecraftBlock::LimeWool,
-            9 => MinecraftBlock::GreenWool,
-            10 => MinecraftBlock::CyanWool,
-            11 => MinecraftBlock::LightBlueWool,
-            12 => MinecraftBlock::BlueWool,
-            13 => MinecraftBlock::PurpleWool,
-            14 => MinecraftBlock::MagentaWool,
-            15 => MinecraftBlock::PinkWool,
-            // Callers guarantee that the digit is between 0 and 15
-            _ => unsafe { std::hint::unreachable_unchecked() },
-        }
-    }
-
-    pub const fn u8_to_wool(v: u8) -> [MinecraftBlock; 2] {
-        let hi = (v >> 4) & 0x0F;
-        let lo = v & 0x0F;
-
-        let hi = MinecraftBlock::hex_digit_to_wool(hi);
-        let lo = MinecraftBlock::hex_digit_to_wool(lo);
-
-        [hi, lo]
-    }
 }
 
 #[test]
 fn block_to_bit_test() {
-    for i in 0..75 {
+    for i in 0..91 {
         let block = MinecraftBlock::bit_to_block(i).unwrap();
         let bit = block.block_to_bit().unwrap();
         assert_eq!(bit, i);
