@@ -54,7 +54,13 @@ pub enum MinecraftError {
     InvalidBlockSequence(String),
 
     #[error("Expected {expected} block, found {found}")]
-    UnexpectedBlock { expected: String, found: String },
+    UnexpectedBlock {
+        expected: MinecraftBlock,
+        found: MinecraftBlock,
+    },
+
+    #[error("Unexpected blocks {0}")]
+    AnUnexpectedBlock(MinecraftBlock),
 
     #[error("Expected a digit block, found {0}")]
     NotDigitBlock(MinecraftBlock),
@@ -106,7 +112,7 @@ pub enum MinecraftError {
     Custom(String),
 
     #[error("Placehodler error")]
-    Placeholder
+    Placeholder,
 }
 
 impl From<tungstenite::Error> for MinecraftError {

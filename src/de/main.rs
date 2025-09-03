@@ -70,8 +70,8 @@ impl MinecraftDeserializer {
         let b = self.consume()?;
         if b != marker_block {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: marker_block.to_string(),
-                found: b.to_string(),
+                expected: marker_block,
+                found: b,
             });
         }
 
@@ -79,8 +79,8 @@ impl MinecraftDeserializer {
             let b = self.consume()?;
             if b != sign_block {
                 return Err(MinecraftError::UnexpectedBlock {
-                    expected: sign_block.to_string(),
-                    found: b.to_string(),
+                    expected: sign_block,
+                    found: b,
                 });
             }
         }
@@ -141,8 +141,8 @@ impl MinecraftDeserializer {
         let b = self.consume()?;
         if b != marker_block {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: marker_block.to_string(),
-                found: b.to_string(),
+                expected: marker_block,
+                found: b,
             });
         }
 
@@ -156,8 +156,8 @@ impl MinecraftDeserializer {
             let b2 = self.consume()?;
             if b2 == MinecraftBlock::Prismarine {
                 return Err(MinecraftError::UnexpectedBlock {
-                    expected: marker_block.to_string(),
-                    found: b2.to_string(),
+                    expected: marker_block,
+                    found: b2,
                 });
             }
 
@@ -350,8 +350,12 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        if self.consume()? != MinecraftBlock::CoalBlock {
-            return Err(MinecraftError::Placeholder);
+        let b = self.consume()?;
+        if b != MinecraftBlock::CoalBlock {
+            return Err(MinecraftError::UnexpectedBlock {
+                expected: MinecraftBlock::CoalBlock,
+                found: b,
+            });
         }
 
         let b = self.consume()?;
@@ -368,8 +372,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b = self.consume()?;
         if b != MinecraftBlock::Bedrock {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::Bedrock.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::Bedrock,
+                found: b,
             });
         }
 
@@ -398,8 +402,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b = self.consume()?;
         if b != MinecraftBlock::SpruceLog {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::SpruceLog.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::SpruceLog,
+                found: b,
             });
         }
 
@@ -416,8 +420,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b = self.consume()?;
         if b != MinecraftBlock::CherryLog {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::CherryLog.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::CherryLog,
+                found: b,
             });
         }
 
@@ -427,8 +431,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         match b {
             MinecraftBlock::DarkPrismarine => seq,
             _ => Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::DarkPrismarine.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::DarkPrismarine,
+                found: b,
             }),
         }
     }
@@ -440,8 +444,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b = self.consume()?;
         if b != MinecraftBlock::CrimsonStem {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::CrimsonStem.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::CrimsonStem,
+                found: b,
             });
         }
 
@@ -451,8 +455,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         match b {
             MinecraftBlock::DarkPrismarine => tuple,
             _ => Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::DarkPrismarine.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::DarkPrismarine,
+                found: b,
             }),
         }
     }
@@ -469,8 +473,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b = self.consume()?;
         if b != MinecraftBlock::WarpedStem {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::WarpedStem.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::WarpedStem,
+                found: b,
             });
         }
 
@@ -486,8 +490,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         match b {
             MinecraftBlock::DarkPrismarine => tuple_struct,
             _ => Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::DarkPrismarine.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::DarkPrismarine,
+                found: b,
             }),
         }
     }
@@ -499,8 +503,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b = self.consume()?;
         if b != MinecraftBlock::PurpurPillar {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::PurpurPillar.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::PurpurPillar,
+                found: b,
             });
         }
 
@@ -520,8 +524,8 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         let b = self.consume()?;
         if b != MinecraftBlock::GoldBlock {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::GoldBlock.to_string(),
-                found: b.to_string(),
+                expected: MinecraftBlock::GoldBlock,
+                found: b,
             });
         }
 
@@ -553,10 +557,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         | MinecraftBlock::DiamondBlock  // Struct Variant
         => visitor.visit_enum(MCEnumAccessor::new(self)),
 
-        b => Err(MinecraftError::UnexpectedBlock {
-            expected: "an enum variant marker (OakLog, DarkOakLog, etc.)".to_string(),
-            found: b.to_string(),
-        }),
+        b => Err(MinecraftError::AnUnexpectedBlock(b)),
     }
     }
 

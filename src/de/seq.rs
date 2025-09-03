@@ -15,7 +15,7 @@ impl<'de> SeqAccess<'de> for MinecraftDeserializer {
             Err(_) => {
                 self.rewind()?;
                 Ok(None)
-            },
+            }
         }
     }
 }

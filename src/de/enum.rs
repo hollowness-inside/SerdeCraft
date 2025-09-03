@@ -66,8 +66,8 @@ impl<'de, 'a> VariantAccess<'de> for MCEnumAccessor<'a> {
         let end_block = self.de.consume()?;
         if end_block != MinecraftBlock::DarkPrismarine {
             return Err(MinecraftError::UnexpectedBlock {
-                expected: MinecraftBlock::DarkPrismarine.to_string(),
-                found: end_block.to_string(),
+                expected: MinecraftBlock::DarkPrismarine,
+                found: end_block,
             });
         }
 
