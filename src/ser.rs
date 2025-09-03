@@ -7,12 +7,12 @@ use crate::{
     blocks::{BASE, MinecraftBlock},
 };
 
-macro_rules! number_to_bits {
-    ($value:tt) => {{
-        if $value == 0 {
-            vec![MinecraftBlock::bit_to_block(0)?]
+fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock>> {
+    let mut value = value.into();
+
+    if value == 0 {
+        Ok(vec![MinecraftBlock::bit_to_block(0)?])
         } else {
-            let mut value = $value;
             let mut bits: Vec<MinecraftBlock> = Vec::new();
             while value != 0 {
             let bit = value.rem_euclid(BASE as u128);
@@ -22,9 +22,8 @@ macro_rules! number_to_bits {
                 bits.push(block);
             }
             bits.reverse();
-            bits
+        Ok(bits)
         }
-    }};
 }
 
 pub struct MinecraftSerializer {
@@ -72,7 +71,7 @@ impl MinecraftSerializer {
         }
 
         let v = v.into();
-        self.place_blocks(&number_to_bits!(v))?;
+        self.place_blocks(&number_to_bits(v)?)?;
         self.place_block(marker_block)
     }
 
@@ -80,7 +79,7 @@ impl MinecraftSerializer {
         let blocks: Vec<MinecraftBlock> = v
             .iter()
             .map(|&x| {
-                let bits = number_to_bits!(x);
+                let bits = number_to_bits(x)?;
                 let zero = MinecraftBlock::bit_to_block(0)?;
                 let mut padded = vec![zero; 2 - bits.len()];
                 padded.extend(bits);
