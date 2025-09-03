@@ -7,17 +7,21 @@ use crate::{blocks::MinecraftBlock, result::MinecraftError};
 
 macro_rules! number_to_bits {
     ($value:tt) => {{
-        let mut value = $value;
-        let mut bits: Vec<MinecraftBlock> = Vec::new();
-        while value != 0 {
-            let bit = value.rem_euclid(75);
-            value /= 75;
+        if $value == 0 {
+            vec![MinecraftBlock::bit_to_block(0)?]
+        } else {
+            let mut value = $value;
+            let mut bits: Vec<MinecraftBlock> = Vec::new();
+            while value != 0 {
+                let bit = value.rem_euclid(75);
+                value /= 75;
 
-            let block = MinecraftBlock::bit_to_block(bit as u8)?;
-            bits.push(block);
+                let block = MinecraftBlock::bit_to_block(bit as u8)?;
+                bits.push(block);
+            }
+            bits.reverse();
+            bits
         }
-        bits.reverse();
-        bits
     }};
 }
 
@@ -57,14 +61,15 @@ impl MinecraftSerializer {
         &mut self,
         v: T,
         marker_block: MinecraftBlock,
-        signed: bool,
+        signed: Option<MinecraftBlock>,
     ) -> Result<(), MinecraftError> {
-        if signed {
-            self.place_block(marker_block)?;
+        self.place_block(marker_block)?;
+
+        if let Some(block) = signed {
+            self.place_block(block)?;
         }
 
         let v = v.into();
-        self.place_block(marker_block)?;
         self.place_blocks(&number_to_bits!(v))?;
         self.place_block(marker_block)
     }
@@ -92,59 +97,75 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
 
     #[inline]
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u8, MinecraftBlock::OchreFroglight, true)
+        self.serialize_number(
+            v as u8,
+            MinecraftBlock::EndStone,
+            Some(MinecraftBlock::OchreFroglight),
+        )
     }
 
     #[inline]
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u16, MinecraftBlock::VerdantFroglight, true)
+        self.serialize_number(
+            v as u16,
+            MinecraftBlock::RawIronBlock,
+            Some(MinecraftBlock::VerdantFroglight),
+        )
     }
 
     #[inline]
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u32, MinecraftBlock::PearlescentFroglight, true)
+        self.serialize_number(
+            v as u32,
+            MinecraftBlock::RawCopperBlock,
+            Some(MinecraftBlock::PearlescentFroglight),
+        )
     }
 
     #[inline]
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u64, MinecraftBlock::SeaLantern, true)
+        self.serialize_number(
+            v as u64,
+            MinecraftBlock::RawGoldBlock,
+            Some(MinecraftBlock::SeaLantern),
+        )
     }
 
     #[inline]
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v, MinecraftBlock::OchreFroglight, false)
+        self.serialize_number(v, MinecraftBlock::EndStone, None)
     }
 
     #[inline]
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v, MinecraftBlock::VerdantFroglight, false)
+        self.serialize_number(v, MinecraftBlock::RawIronBlock, None)
     }
 
     #[inline]
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v, MinecraftBlock::PearlescentFroglight, false)
+        self.serialize_number(v, MinecraftBlock::RawCopperBlock, None)
     }
 
     #[inline]
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v, MinecraftBlock::SeaLantern, false)
+        self.serialize_number(v, MinecraftBlock::RawGoldBlock, None)
     }
 
     #[inline]
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
         let bits = v.to_bits();
-        self.serialize_number(bits, MinecraftBlock::Shroomlight, false)
+        self.serialize_number(bits, MinecraftBlock::Shroomlight, None)
     }
 
     #[inline]
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
         let bits = v.to_bits();
-        self.serialize_number(bits, MinecraftBlock::Glowstone, false)
+        self.serialize_number(bits, MinecraftBlock::Glowstone, None)
     }
 
     #[inline]
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        self.serialize_number(v as u32, MinecraftBlock::ChiseledDeepslate, false)
+        self.serialize_number(v as u32, MinecraftBlock::ChiseledDeepslate, None)
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
