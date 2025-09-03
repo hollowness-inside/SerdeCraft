@@ -145,7 +145,6 @@ local start = {-1, 56, 0}  -- x, y, z coordinates
 - Structs and enums
 - Maps and sequences
 - Nested structures
-- May implement others by your request
 
 ## Error Handling
 
