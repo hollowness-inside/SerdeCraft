@@ -6,16 +6,15 @@ use crate::{MinecraftBlock, result::MinecraftError};
 pub(super) struct MCMapAccess<'a> {
     deserializer: &'a mut MinecraftDeserializer,
     terminator: MinecraftBlock,
+    finished: bool,
 }
 
 impl<'a> MCMapAccess<'a> {
-    pub fn new(
-        deserializer: &'a mut MinecraftDeserializer,
-        terminator: MinecraftBlock,
-    ) -> Self {
+    pub fn new(deserializer: &'a mut MinecraftDeserializer, terminator: MinecraftBlock) -> Self {
         Self {
             deserializer,
             terminator,
+            finished: false,
         }
     }
 }
@@ -27,8 +26,15 @@ impl<'a, 'de> MapAccess<'de> for MCMapAccess<'a> {
     where
         K: serde::de::DeserializeSeed<'de>,
     {
-        let v = self.deserializer.peek()?;
-        if v == self.terminator {
+        if self.finished {
+            return Ok(None);
+        }
+
+        let next_block = self.deserializer.peek()?;
+        if next_block == self.terminator {
+            // We've reached the end of the map, consume the terminator
+            self.deserializer.consume()?;
+            self.finished = true;
             return Ok(None);
         }
 

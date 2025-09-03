@@ -568,7 +568,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             MinecraftBlock::GildedBlackstone => self.deserialize_string(visitor),
             MinecraftBlock::RawCopperBlock => self.deserialize_u32(visitor),
             b => Err(MinecraftError::Custom(format!(
-                "Expected a block that marks an identifier (like GildedBlackstone for a string or RawCopperBlock for a u32), but found {}",
+                "Expected a block that marks an identifier but found {}",
                 b.to_string()
             ))),
         }

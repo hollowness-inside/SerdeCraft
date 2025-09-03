@@ -1,27 +1,23 @@
 use serde::{
     Deserializer,
-    de::{EnumAccess, VariantAccess},
+    de::{EnumAccess, VariantAccess, Visitor},
 };
 
 use crate::{MinecraftBlock, MinecraftError};
 
 use super::MinecraftDeserializer;
 
-pub struct MCEnumAccessor<'a, 'de: 'a> {
+pub struct MCEnumAccessor<'a> {
     de: &'a mut MinecraftDeserializer,
-    _phantom: std::marker::PhantomData<&'de ()>,
 }
 
-impl<'a, 'de> MCEnumAccessor<'a, 'de> {
+impl<'a> MCEnumAccessor<'a> {
     pub fn new(de: &'a mut MinecraftDeserializer) -> Self {
-        MCEnumAccessor {
-            de,
-            _phantom: std::marker::PhantomData,
-        }
+        MCEnumAccessor { de }
     }
 }
 
-impl<'de, 'a> EnumAccess<'de> for MCEnumAccessor<'a, 'de> {
+impl<'de, 'a> EnumAccess<'de> for MCEnumAccessor<'a> {
     type Error = MinecraftError;
     type Variant = Self;
 
@@ -34,7 +30,7 @@ impl<'de, 'a> EnumAccess<'de> for MCEnumAccessor<'a, 'de> {
     }
 }
 
-impl<'de, 'a> VariantAccess<'de> for MCEnumAccessor<'a, 'de> {
+impl<'de, 'a> VariantAccess<'de> for MCEnumAccessor<'a> {
     type Error = MinecraftError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {
@@ -52,20 +48,58 @@ impl<'de, 'a> VariantAccess<'de> for MCEnumAccessor<'a, 'de> {
     where
         V: serde::de::Visitor<'de>,
     {
-        self.de.parse_number(MinecraftBlock::RawCopperBlock, None)?;
-        self.de.deserialize_seq(visitor)
+        struct LengthVisitor;
+        impl<'de> Visitor<'de> for LengthVisitor {
+            type Value = u32;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("tuple variant length")
+            }
+            fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E> {
+                Ok(v)
+            }
+        }
+
+        let _serialized_len = self.de.deserialize_u32(LengthVisitor)?;
+
+        let result = visitor.visit_seq(&mut *self.de)?;
+
+        let end_block = self.de.consume()?;
+        if end_block != MinecraftBlock::DarkPrismarine {
+            return Err(MinecraftError::UnexpectedBlock {
+                expected: MinecraftBlock::DarkPrismarine.to_string(),
+                found: end_block.to_string(),
+            });
+        }
+
+        Ok(result)
     }
 
     fn struct_variant<V>(
         self,
-        fields: &'static [&'static str],
+        _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        self.de.parse_number(MinecraftBlock::RawCopperBlock, None)?;
-        self.de
-            .deserialize_struct("struct_variant", fields, visitor)
+        struct LengthVisitor;
+        impl<'de> Visitor<'de> for LengthVisitor {
+            type Value = u32;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct variant length")
+            }
+            fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E> {
+                Ok(v)
+            }
+        }
+
+        let _serialized_len = self.de.deserialize_u32(LengthVisitor)?;
+
+        let result = visitor.visit_map(&mut crate::de::map::MCMapAccess::new(
+            self.de,
+            MinecraftBlock::EmeraldBlock,
+        ))?;
+
+        Ok(result)
     }
 }

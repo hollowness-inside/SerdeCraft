@@ -289,7 +289,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
         self.place_block(MinecraftBlock::WarpedStem)?;
         name.serialize(&mut *self)?;
-        len.serialize(&mut *self)?;
+        (len as u32).serialize(&mut *self)?;
         Ok(self)
     }
 
@@ -318,7 +318,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     ) -> Result<Self::SerializeStruct, Self::Error> {
         self.place_block(MinecraftBlock::GoldBlock)?;
         name.serialize(&mut *self)?;
-        len.serialize(&mut *self)?;
+        (len as u32).serialize(&mut *self)?;
         Ok(self)
     }
 
@@ -331,7 +331,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
         self.place_block(MinecraftBlock::DiamondBlock)?;
         variant_index.serialize(&mut *self)?;
-        len.serialize(&mut *self)?;
+        (len as u32).serialize(&mut *self)?;
         Ok(self)
     }
 }
