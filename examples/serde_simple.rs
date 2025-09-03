@@ -23,11 +23,12 @@ pub enum Colors {
 }
 
 fn main() -> MinecraftResult<()> {
-    let v: Rgb = Rgb {
+    type T = Rgb;
+    let v: T = Rgb {
         r: 1,
-        g: 12,
-        b: 212,
-        color: Colors::Blue,
+        g: 2,
+        b: 3,
+        color: Colors::Red,
     };
     let server = TcpListener::bind("127.0.0.1:8765")?;
     println!("Started");
@@ -61,7 +62,7 @@ fn main() -> MinecraftResult<()> {
             }
             "de" => {
                 let mut deserializer = MinecraftDeserializer::new(websocket);
-                match <Rgb>::deserialize(&mut deserializer) {
+                match <T>::deserialize(&mut deserializer) {
                     Ok(x) => assert_eq!(v, x),
                     Err(e) => eprintln!("Failed to deserialize: {:?}", e),
                 }
