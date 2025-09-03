@@ -9,3 +9,5 @@ pub use result::{MinecraftError, MinecraftResult};
 
 mod ser;
 pub use ser::MinecraftSerializer;
+
+mod option_ser;
