@@ -3,10 +3,10 @@ true => #redstone block
 
 numbers:
     signed:
-        bits_8 => #ochre froglight * 2 + ... + #ochre froglight
-        bits_16 => #verdant froglight * 2 + ... + #verdant froglight
-        bits_32 => #pearlscent froglight * 2 + ... + #pearlscent froglight
-        bits_64 => #sea lantern * 2 + ... + #sea lantern
+        bits_8 => EndStone + OchreFroglight + ... + EndStone
+        bits_16 => RawIron + VerdantFroglight + ... + RawIron
+        bits_32 => RawCopper + PearlscentFroglight + ... + RawCopper
+        bits_64 => RawGold + SeaLantern + ... + RawGold
             where ... = (#wool | #concrete | #terracotta | #glazed terracotta | #planks)
 
     unsigned:
