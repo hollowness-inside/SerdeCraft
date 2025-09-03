@@ -72,6 +72,8 @@ while true do
         elseif cmd == "rewind" then
             rewind()
             ws.send("done")
+        elseif cmd == "skip" then
+            proceed()
         end
 
     elseif event == "websocket_closed" then

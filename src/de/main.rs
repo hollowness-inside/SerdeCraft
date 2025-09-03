@@ -12,25 +12,26 @@ use super::r#enum::MCEnumAccessor;
 
 pub struct MinecraftDeserializer {
     socket: WebSocket<TcpStream>,
+    next: Option<MinecraftBlock>,
 }
 
 impl<'a> MinecraftDeserializer {
     pub fn new(socket: WebSocket<TcpStream>) -> Self {
-        MinecraftDeserializer { socket }
+        MinecraftDeserializer { socket, next: None }
     }
 
     pub(super) fn peek(&mut self) -> MinecraftResult<MinecraftBlock> {
-        self.socket
-            .write(tungstenite::Message::Text("peek".into()))?;
-        self.socket.flush()?;
-
-        let response = self.socket.read()?;
-        let text = response.to_text()?;
-
-        text.try_into()
+        let block = self.consume()?;
+        self.rewind()?;
+        Ok(*self.next.insert(block))
     }
 
     pub(super) fn consume(&mut self) -> MinecraftResult<MinecraftBlock> {
+        if let Some(next) = self.next.take() {
+            self.skip()?;
+            return Ok(next);
+        }
+
         self.socket
             .write(tungstenite::Message::Text("consume".into()))?;
         self.socket.flush()?;
@@ -52,6 +53,13 @@ impl<'a> MinecraftDeserializer {
             true => Ok(()),
             false => Err(MinecraftError::RewindFailed),
         }
+    }
+
+    pub(super) fn skip(&mut self) -> MinecraftResult<()> {
+        self.socket
+            .write(tungstenite::Message::Text("skip".into()))?;
+        self.socket.flush()?;
+        Ok(())
     }
 
     fn parse_number(
