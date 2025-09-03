@@ -1,5 +1,3 @@
-use std::hint::unreachable_unchecked;
-
 use crate::{MinecraftResult, result::MinecraftError};
 
 macro_rules! block_enum {
