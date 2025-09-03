@@ -10,6 +10,12 @@ impl<'de> SeqAccess<'de> for MinecraftDeserializer {
     where
         T: serde::de::DeserializeSeed<'de>,
     {
-        seed.deserialize(self).map(Some)
+        match seed.deserialize(&mut *self).map(Some) {
+            Ok(value) => Ok(value),
+            Err(_) => {
+                self.rewind()?;
+                Ok(None)
+            },
+        }
     }
 }

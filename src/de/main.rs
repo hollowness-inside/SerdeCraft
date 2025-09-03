@@ -62,7 +62,7 @@ impl<'a> MinecraftDeserializer {
         Ok(())
     }
 
-    fn parse_number(
+    pub(super) fn parse_number(
         &mut self,
         marker_block: MinecraftBlock,
         signed: Option<MinecraftBlock>,
@@ -346,12 +346,19 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
         visitor.visit_byte_buf(bytes)
     }
 
-    #[inline(always)]
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,
     {
-        self.deserialize_any(visitor)
+        if self.consume()? != MinecraftBlock::CoalBlock {
+            return Err(MinecraftError::Placeholder);
+        }
+
+        let b = self.consume()?;
+        if b == MinecraftBlock::CoalBlock {
+            return visitor.visit_none();
+        }
+        visitor.visit_some(self)
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -537,7 +544,20 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        visitor.visit_enum(MCEnumAccessor::new(self))
+        let marker_block = self.consume()?;
+
+        match marker_block {
+        MinecraftBlock::OakLog          // Unit Variant
+        | MinecraftBlock::DarkOakLog    // Newtype Variant
+        | MinecraftBlock::PurpurBlock   // Tuple Variant
+        | MinecraftBlock::DiamondBlock  // Struct Variant
+        => visitor.visit_enum(MCEnumAccessor::new(self)),
+
+        b => Err(MinecraftError::UnexpectedBlock {
+            expected: "an enum variant marker (OakLog, DarkOakLog, etc.)".to_string(),
+            found: b.to_string(),
+        }),
+    }
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -546,15 +566,13 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
     {
         match self.peek()? {
             MinecraftBlock::GildedBlackstone => self.deserialize_string(visitor),
-            MinecraftBlock::OakLog => {
-                self.consume()?;
-                let number = self.parse_a_number()? as u32;
-                visitor.visit_u32(number)
-            }
-            _ => unimplemented!(),
+            MinecraftBlock::RawCopperBlock => self.deserialize_u32(visitor),
+            b => Err(MinecraftError::Custom(format!(
+                "Expected a block that marks an identifier (like GildedBlackstone for a string or RawCopperBlock for a u32), but found {}",
+                b.to_string()
+            ))),
         }
     }
-
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::Visitor<'de>,

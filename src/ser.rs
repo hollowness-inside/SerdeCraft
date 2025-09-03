@@ -3,7 +3,7 @@ use std::net::TcpStream;
 use serde::Serialize;
 use tungstenite::{Message, WebSocket};
 
-use crate::{blocks::MinecraftBlock, result::MinecraftError};
+use crate::{blocks::MinecraftBlock, option_ser::OptionSerializer, result::MinecraftError};
 
 macro_rules! number_to_bits {
     ($value:tt) => {{
@@ -34,7 +34,7 @@ impl MinecraftSerializer {
         MinecraftSerializer { socket }
     }
 
-    fn place_block(&mut self, block: MinecraftBlock) -> Result<(), MinecraftError> {
+    pub(super) fn place_block(&mut self, block: MinecraftBlock) -> Result<(), MinecraftError> {
         let block_name = block.to_string();
         let message = Message::Text(block_name.into());
         self.socket
@@ -176,7 +176,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
             .iter()
             .flat_map(|&x| {
                 let bits = number_to_bits!(x);
-                let zero = unsafe { MinecraftBlock::bit_to_block(0).unwrap_unchecked() };
+                let zero = MinecraftBlock::bit_to_block(0).unwrap();
                 let mut padded = vec![zero; 2 - bits.len()];
                 padded.extend(bits);
                 Ok::<Vec<MinecraftBlock>, MinecraftError>(padded)
@@ -209,6 +209,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
 
     #[inline]
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+        self.place_block(MinecraftBlock::CoalBlock)?;
         self.place_block(MinecraftBlock::CoalBlock)
     }
 
@@ -217,7 +218,8 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        value.serialize(self)
+        self.place_block(MinecraftBlock::CoalBlock)?;
+        value.serialize(OptionSerializer::new(self))
     }
 
     #[inline]

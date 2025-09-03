@@ -1,27 +1,71 @@
-use serde::de::EnumAccess;
+use serde::{
+    Deserializer,
+    de::{EnumAccess, VariantAccess},
+};
 
-use super::{MCVariantAccessor, MinecraftDeserializer};
-use crate::MinecraftError;
+use crate::{MinecraftBlock, MinecraftError};
 
-pub(super) struct MCEnumAccessor<'de> {
-    deserializer: &'de mut MinecraftDeserializer,
+use super::MinecraftDeserializer;
+
+pub struct MCEnumAccessor<'a, 'de: 'a> {
+    de: &'a mut MinecraftDeserializer,
+    _phantom: std::marker::PhantomData<&'de ()>,
 }
 
-impl<'de> MCEnumAccessor<'de> {
-    pub fn new(deserializer: &'de mut MinecraftDeserializer) -> Self {
-        MCEnumAccessor { deserializer }
+impl<'a, 'de> MCEnumAccessor<'a, 'de> {
+    pub fn new(de: &'a mut MinecraftDeserializer) -> Self {
+        MCEnumAccessor {
+            de,
+            _phantom: std::marker::PhantomData,
+        }
     }
 }
 
-impl<'a, 'de> EnumAccess<'de> for MCEnumAccessor<'a> {
+impl<'de, 'a> EnumAccess<'de> for MCEnumAccessor<'a, 'de> {
     type Error = MinecraftError;
-    type Variant = MCVariantAccessor<'a>;
+    type Variant = Self;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
     where
         V: serde::de::DeserializeSeed<'de>,
     {
-        let val = seed.deserialize(&mut *self.deserializer)?;
-        Ok((val, MCVariantAccessor::new(self.deserializer)))
+        let variant_index = seed.deserialize(&mut *self.de)?;
+        Ok((variant_index, self))
+    }
+}
+
+impl<'de, 'a> VariantAccess<'de> for MCEnumAccessor<'a, 'de> {
+    type Error = MinecraftError;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+    where
+        T: serde::de::DeserializeSeed<'de>,
+    {
+        seed.deserialize(self.de)
+    }
+
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.de.parse_number(MinecraftBlock::RawCopperBlock, None)?;
+        self.de.deserialize_seq(visitor)
+    }
+
+    fn struct_variant<V>(
+        self,
+        fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.de.parse_number(MinecraftBlock::RawCopperBlock, None)?;
+        self.de
+            .deserialize_struct("struct_variant", fields, visitor)
     }
 }
