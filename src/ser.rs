@@ -15,7 +15,7 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
         } else {
             let mut bits: Vec<MinecraftBlock> = Vec::new();
             while value != 0 {
-            let bit = value.rem_euclid(BASE as u128);
+            let bit = value % BASE as u128;
             value /= BASE as u128;
 
                 let block = MinecraftBlock::bit_to_block(bit as u8)?;
