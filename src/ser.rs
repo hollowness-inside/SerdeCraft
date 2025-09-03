@@ -15,8 +15,8 @@ macro_rules! number_to_bits {
             let mut value = $value;
             let mut bits: Vec<MinecraftBlock> = Vec::new();
             while value != 0 {
-                let bit = value.rem_euclid(75);
-                value /= 75;
+                let bit = value.rem_euclid(91);
+                value /= 91;
 
                 let block = MinecraftBlock::bit_to_block(bit as u8)?;
                 bits.push(block);
@@ -294,7 +294,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
         self.place_block(MinecraftBlock::PurpurBlock)?;
-        self.serialize_u32(variant_index as u32)?;
+        self.serialize_u32(variant_index)?;
         self.serialize_u32(len as u32)?;
         Ok(self)
     }

@@ -15,7 +15,7 @@ pub struct MinecraftDeserializer {
     next: Option<MinecraftBlock>,
 }
 
-impl<'a> MinecraftDeserializer {
+impl MinecraftDeserializer {
     pub fn new(socket: WebSocket<TcpStream>) -> Self {
         MinecraftDeserializer { socket, next: None }
     }
@@ -161,7 +161,7 @@ impl<'a> MinecraftDeserializer {
                 });
             }
 
-            let v = b1.block_to_bit()? as u32 * 75 + b2.block_to_bit()? as u32;
+            let v = b1.block_to_bit()? as u32 * 91 + b2.block_to_bit()? as u32;
             let v = v as u8;
             bytes.push(v);
         }
@@ -568,8 +568,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
             MinecraftBlock::GildedBlackstone => self.deserialize_string(visitor),
             MinecraftBlock::RawCopperBlock => self.deserialize_u32(visitor),
             b => Err(MinecraftError::Custom(format!(
-                "Expected a block that marks an identifier but found {}",
-                b.to_string()
+                "Expected a block that marks an identifier but found {b}"
             ))),
         }
     }
