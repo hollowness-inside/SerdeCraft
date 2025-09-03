@@ -38,7 +38,7 @@ impl MinecraftSerializer {
     }
 
     pub(super) fn place_block(&mut self, block: MinecraftBlock) -> Result<(), MinecraftError> {
-        let message = Message::Text(block.to_string().into());
+        let message = Message::text(block.to_string());
         self.socket.send(message)?;
         self.socket.read()?;
         Ok(())
