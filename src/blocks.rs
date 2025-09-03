@@ -33,6 +33,8 @@ macro_rules! block_enum {
     };
 }
 
+pub const BASE: usize = 91;
+
 block_enum!({
     Stone = "minecraft:stone",
     EndStone = "minecraft:end_stone",
@@ -218,7 +220,7 @@ impl MinecraftBlock {
                 bit -= 75;
                 MinecraftBlock::WhiteStainedGlass as u8
             }
-            _ => unsafe { unreachable_unchecked() },
+            _ => unimplemented!(),
         };
 
         let offset = start + bit;
@@ -421,7 +423,7 @@ impl MinecraftBlock {
 
 #[test]
 fn block_to_bit_test() {
-    for i in 0..91 {
+    for i in 0..BASE as u8 {
         let block = MinecraftBlock::bit_to_block(i).unwrap();
         let bit = block.block_to_bit().unwrap();
         assert_eq!(bit, i);

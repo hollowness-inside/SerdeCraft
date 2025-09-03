@@ -4,7 +4,7 @@ use serde::Serialize;
 use tungstenite::{Message, WebSocket};
 
 use crate::{
-    MinecraftResult, blocks::MinecraftBlock, option_ser::OptionSerializer, result::MinecraftError,
+    blocks::{BASE, MinecraftBlock},
 };
 
 macro_rules! number_to_bits {
@@ -15,8 +15,8 @@ macro_rules! number_to_bits {
             let mut value = $value;
             let mut bits: Vec<MinecraftBlock> = Vec::new();
             while value != 0 {
-                let bit = value.rem_euclid(91);
-                value /= 91;
+            let bit = value.rem_euclid(BASE as u128);
+            value /= BASE as u128;
 
                 let block = MinecraftBlock::bit_to_block(bit as u8)?;
                 bits.push(block);
