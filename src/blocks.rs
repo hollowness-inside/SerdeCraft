@@ -35,6 +35,7 @@ macro_rules! block_enum {
 
 block_enum!({
     Stone = "minecraft:stone",
+    EndStone = "minecraft:end_stone",
     Cobblestone = "minecraft:cobblestone",
     QuartzBlock = "minecraft:quartz_block",
     Obsidian = "minecraft:obsidian",
@@ -248,7 +249,10 @@ impl MinecraftBlock {
             return Ok(*self as u8 - start + 64);
         }
 
-        Err(MinecraftError::Custom("Wrong block to bit".to_string()))
+        Err(MinecraftError::Custom(format!(
+            "Wrong block to bit: {}",
+            self
+        )))
     }
 
     pub const fn is_glass(&self) -> bool {
