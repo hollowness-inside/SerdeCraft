@@ -69,7 +69,7 @@ impl MinecraftSerializer {
     }
 
     fn write_bytes(&mut self, v: &[u8]) -> MinecraftResult<()> {
-        let mut big_int = BigUint::from_bytes_be(v);
+        let mut big_uint = BigUint::from_bytes_be(v);
 
         let string_len = {
             let len = v.len() as f32;
@@ -77,9 +77,9 @@ impl MinecraftSerializer {
         };
 
         let mut blocks = Vec::with_capacity(string_len);
-        while !big_int.is_zero() {
-            let big_bit: BigUint = &big_int % BASE;
-            big_int /= BASE;
+        while !big_uint.is_zero() {
+            let big_bit: BigUint = &big_uint % BASE;
+            big_uint /= BASE;
 
             let bit: u8 = big_bit.try_into().unwrap();
             blocks.push(MinecraftBlock::bit_to_block(bit)?);

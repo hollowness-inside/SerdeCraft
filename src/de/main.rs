@@ -1,9 +1,11 @@
 use std::net::TcpStream;
 
+use num_bigint::BigUint;
+use num_traits::Zero;
 use tungstenite::WebSocket;
 
 use crate::{
-    blocks::MinecraftBlock,
+    blocks::{BASE, MinecraftBlock},
     de::map::MCMapAccess,
     result::{MinecraftError, MinecraftResult},
 };
@@ -146,26 +148,23 @@ impl MinecraftDeserializer {
             });
         }
 
-        let mut bytes = Vec::new();
+        let mut blocks = Vec::new();
         loop {
-            let b1 = self.consume()?;
-            if b1 == MinecraftBlock::Prismarine {
+            let block = self.consume()?;
+            if block == MinecraftBlock::Prismarine {
                 break;
             }
+            blocks.push(block);
+        }
+        blocks.reverse();
 
-            let b2 = self.consume()?;
-            if b2 == MinecraftBlock::Prismarine {
-                return Err(MinecraftError::UnexpectedBlock {
-                    expected: marker_block,
-                    found: b2,
-                });
-            }
-
-            let v = b1.block_to_bit()? as u32 * 91 + b2.block_to_bit()? as u32;
-            let v = v as u8;
-            bytes.push(v);
+        let mut big_uint = BigUint::zero();
+        for block in blocks {
+            big_uint *= BASE;
+            big_uint += block.block_to_bit()?;
         }
 
+        let bytes = big_uint.to_bytes_be();
         Ok(bytes)
     }
 
