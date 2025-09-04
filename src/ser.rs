@@ -1,5 +1,7 @@
 use std::net::TcpStream;
 
+use num_bigint::BigUint;
+use num_traits::Zero;
 use serde::Serialize;
 use tungstenite::{Message, WebSocket};
 
@@ -67,12 +69,20 @@ impl MinecraftSerializer {
     }
 
     fn write_bytes(&mut self, v: &[u8]) -> MinecraftResult<()> {
-        let mut blocks = Vec::with_capacity(2 * v.len());
-        for &byte in v {
-            let hi = byte / 91;
-            let lo = byte % 91;
-            blocks.push(MinecraftBlock::bit_to_block(hi)?);
-            blocks.push(MinecraftBlock::bit_to_block(lo)?);
+        let mut big_int = BigUint::from_bytes_be(v);
+
+        let string_len = {
+            let len = v.len() as f32;
+            len.log(BASE as f32).floor() as usize + 1
+        };
+
+        let mut blocks = Vec::with_capacity(string_len);
+        while !big_int.is_zero() {
+            let big_bit: BigUint = &big_int % BASE;
+            big_int /= BASE;
+
+            let bit: u8 = big_bit.try_into().unwrap();
+            blocks.push(MinecraftBlock::bit_to_block(bit)?);
         }
         self.place_blocks(&blocks)
     }
