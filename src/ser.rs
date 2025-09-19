@@ -45,6 +45,7 @@ impl MinecraftSerializer {
         Ok(())
     }
 
+    /// Place multiple blocks in the Minecraft world by iterating over a vector of blocks.
     #[inline(always)]
     fn place_blocks(&mut self, blocks: Vec<MinecraftBlock>) -> Result<(), MinecraftError> {
         blocks
@@ -52,6 +53,7 @@ impl MinecraftSerializer {
             .try_for_each(|block: MinecraftBlock| self.place_block(block))
     }
 
+    /// Serialize a number with its corresponding marker and an optional signed block if the number is signed.
     fn serialize_number<T: Into<u128>>(
         &mut self,
         v: T,
@@ -68,6 +70,7 @@ impl MinecraftSerializer {
         self.place_block(marker)
     }
 
+    /// Write a byte slice as pairs of blocks, each representing a byte split into two base-91 values.
     fn write_bytes(&mut self, v: &[u8]) -> MinecraftResult<()> {
         let mut blocks = Vec::with_capacity(2 * v.len());
         for &byte in v {

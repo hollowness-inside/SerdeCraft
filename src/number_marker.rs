@@ -24,23 +24,26 @@ macro_rules! impl_num_const {
     }
 }
 
+/// Helper struct for associating number types with Minecraft blocks.
 pub(crate) struct NumberMarker {
+    /// The marker block representing the number type.
     pub(crate) marker: MinecraftBlock,
+
+    /// An optional block indicating if the number is signed (not necessarily negative).
     pub(crate) signed: Option<MinecraftBlock>,
 }
 
 impl NumberMarker {
-    impl_num_const! {
-        U8: EndStone - I8: OchreFroglight;
-        U16: RawIronBlock - I16: VerdantFroglight;
-        U32: RawCopperBlock - I32: PearlescentFroglight;
-        U64: RawGoldBlock - I64: SeaLantern;
-        F32: Shroomlight;
-        F64: Glowstone;
-        CHAR: ChiseledDeepslate;
-    }
+    impl_num_const!(U8:EndStone-I8:OchreFroglight);
+    impl_num_const!(U16:RawIronBlock-I16:VerdantFroglight);
+    impl_num_const!(U32:RawCopperBlock-I32:PearlescentFroglight);
+    impl_num_const!(U64:RawGoldBlock-I64:SeaLantern);
+    impl_num_const!(F32:Shroomlight);
+    impl_num_const!(F64:Glowstone);
+    impl_num_const!(CHAR:ChiseledDeepslate);
 
-    pub(super) fn is_marker(block: &MinecraftBlock) -> bool {
+    /// Check if a block is a valid number marker.
+    pub(crate) fn is_marker(block: &MinecraftBlock) -> bool {
         matches!(
             block,
             MinecraftBlock::EndStone
@@ -53,7 +56,8 @@ impl NumberMarker {
         )
     }
 
-    pub(super) fn is_sign_marker(block: &MinecraftBlock) -> bool {
+    /// Check if a block is a valid sign marker.
+    pub(crate) fn is_sign_marker(block: &MinecraftBlock) -> bool {
         matches!(
             block,
             MinecraftBlock::OchreFroglight
