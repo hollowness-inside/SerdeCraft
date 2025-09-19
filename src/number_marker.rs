@@ -35,13 +35,13 @@ pub(crate) struct NumberMarker {
 
 impl NumberMarker {
     impl_num_const! {
-        U8:EndStone-I8:OchreFroglight;
-        U16:RawIronBlock-I16:VerdantFroglight;
-        U32:RawCopperBlock-I32:PearlescentFroglight;
-        U64:RawGoldBlock-I64:SeaLantern;
-        F32:Shroomlight;
-        F64:Glowstone;
-        CHAR:ChiseledDeepslate;
+        U8: EndStone - I8: OchreFroglight;
+        U16: RawIronBlock - I16: VerdantFroglight;
+        U32: RawCopperBlock - I32: PearlescentFroglight;
+        U64: RawGoldBlock - I64: SeaLantern;
+        F32: Shroomlight;
+        F64: Glowstone;
+        CHAR: ChiseledDeepslate;
     }
 
     /// Check if a block is a valid number marker.
