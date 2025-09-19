@@ -1,16 +1,14 @@
 mod blocks;
-pub use blocks::MinecraftBlock;
-
 mod de;
-pub use de::MinecraftDeserializer;
-
-mod result;
-pub use result::{MinecraftError, MinecraftResult};
-
-mod ser;
-pub use ser::MinecraftSerializer;
-
 mod option_ser;
+mod result;
+mod ser;
+mod websocket;
+
+pub use blocks::MinecraftBlock;
+pub use de::MinecraftDeserializer;
+pub use result::{MinecraftError, MinecraftResult};
+pub use ser::MinecraftSerializer;
 
 mod number_marker;
 pub(crate) use number_marker::NumberMarker;

@@ -1,12 +1,13 @@
 use serde::Serialize;
 
-use crate::{MinecraftBlock, MinecraftError, MinecraftSerializer};
+use crate::{MinecraftBlock, MinecraftError, MinecraftSerializer, websocket::MCWebSocket};
 
 macro_rules! serialize {
     ($index:literal = $method:ident$(<$T:tt>)?($($v:ident: $arg:ty),*) => $R:ident) => {
         fn $method$(<$T: ?Sized + Serialize>)?(self, $($v: $arg),*) -> Result<Self::$R, Self::Error> {
             self.serializer
-                .place_block(MinecraftBlock::bit_to_block($index)?)?;
+                .socket
+                .send_block(MinecraftBlock::bit_to_block($index)?)?;
             self.serializer.$method($($v),*)
         }
     };
@@ -14,7 +15,8 @@ macro_rules! serialize {
     ($index:literal = $method:ident$(<$T:tt>)?($($v:ident: $arg:ty),*)) => {
         fn $method$(<$T: ?Sized + Serialize>)?(self, $($v: $arg),*) -> Result<Self::Ok, Self::Error> {
             self.serializer
-                .place_block(MinecraftBlock::bit_to_block($index)?)?;
+                .socket
+                .send_block(MinecraftBlock::bit_to_block($index)?)?;
             self.serializer.$method($($v),*)
         }
     };
@@ -26,27 +28,27 @@ macro_rules! serialize {
     };
 }
 
-pub(super) struct OptionSerializer<'a> {
-    serializer: &'a mut MinecraftSerializer,
+pub(super) struct OptionSerializer<'a, S> {
+    serializer: &'a mut MinecraftSerializer<S>,
 }
 
-impl<'a> OptionSerializer<'a> {
-    pub fn new(serializer: &'a mut MinecraftSerializer) -> Self {
+impl<'a, S> OptionSerializer<'a, S> {
+    pub fn new(serializer: &'a mut MinecraftSerializer<S>) -> Self {
         Self { serializer }
     }
 }
 
-impl<'a> serde::ser::Serializer for OptionSerializer<'a> {
+impl<'a, S: MCWebSocket> serde::ser::Serializer for OptionSerializer<'a, S> {
     type Ok = ();
     type Error = MinecraftError;
 
-    type SerializeSeq = &'a mut MinecraftSerializer;
-    type SerializeTuple = &'a mut MinecraftSerializer;
-    type SerializeTupleStruct = &'a mut MinecraftSerializer;
-    type SerializeTupleVariant = &'a mut MinecraftSerializer;
-    type SerializeMap = &'a mut MinecraftSerializer;
-    type SerializeStruct = &'a mut MinecraftSerializer;
-    type SerializeStructVariant = &'a mut MinecraftSerializer;
+    type SerializeSeq = &'a mut MinecraftSerializer<S>;
+    type SerializeTuple = &'a mut MinecraftSerializer<S>;
+    type SerializeTupleStruct = &'a mut MinecraftSerializer<S>;
+    type SerializeTupleVariant = &'a mut MinecraftSerializer<S>;
+    type SerializeMap = &'a mut MinecraftSerializer<S>;
+    type SerializeStruct = &'a mut MinecraftSerializer<S>;
+    type SerializeStructVariant = &'a mut MinecraftSerializer<S>;
 
     serialize! {
         0 = serialize_bool(v: bool),

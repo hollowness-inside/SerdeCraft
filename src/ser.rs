@@ -1,12 +1,10 @@
-use std::net::TcpStream;
-
 use serde::Serialize;
-use tungstenite::{Message, WebSocket};
 
 use crate::{
     MinecraftError, MinecraftResult, NumberMarker,
     blocks::{BASE, MinecraftBlock},
     option_ser::OptionSerializer,
+    websocket::MCWebSocket,
 };
 
 fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock>> {
@@ -28,29 +26,21 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
     Ok(bits)
 }
 
-pub struct MinecraftSerializer {
-    socket: WebSocket<TcpStream>,
+pub struct MinecraftSerializer<S> {
+    pub(crate) socket: S,
 }
 
-impl MinecraftSerializer {
-    pub fn new(socket: WebSocket<TcpStream>) -> Self {
+impl<S: MCWebSocket> MinecraftSerializer<S> {
+    pub fn new(socket: S) -> Self {
         Self { socket }
-    }
-
-    /// Place a single block in the Minecraft world.
-    pub(super) fn place_block(&mut self, block: MinecraftBlock) -> Result<(), MinecraftError> {
-        let message = Message::text(block.to_string());
-        self.socket.send(message)?;
-        self.socket.read()?;
-        Ok(())
     }
 
     /// Place multiple blocks in the Minecraft world by iterating over a vector of blocks.
     #[inline(always)]
-    fn place_blocks(&mut self, blocks: Vec<MinecraftBlock>) -> Result<(), MinecraftError> {
+    fn send_blocks(&mut self, blocks: Vec<MinecraftBlock>) -> Result<(), MinecraftError> {
         blocks
             .into_iter()
-            .try_for_each(|block: MinecraftBlock| self.place_block(block))
+            .try_for_each(|block: MinecraftBlock| self.socket.send_block(block))
     }
 
     /// Serialize a number with its corresponding marker and an optional signed block if the number is signed.
@@ -59,15 +49,15 @@ impl MinecraftSerializer {
         v: T,
         NumberMarker { marker, signed }: NumberMarker,
     ) -> Result<(), MinecraftError> {
-        self.place_block(marker.clone())?;
+        self.socket.send_block(marker.clone())?;
 
         if let Some(block) = signed {
-            self.place_block(block)?;
+            self.socket.send_block(block)?;
         }
 
         let v = v.into();
-        self.place_blocks(number_to_bits(v)?)?;
-        self.place_block(marker)
+        self.send_blocks(number_to_bits(v)?)?;
+        self.socket.send_block(marker)
     }
 
     /// Write a byte slice as pairs of blocks, each representing a byte split into two base-91 values.
@@ -79,11 +69,11 @@ impl MinecraftSerializer {
             blocks.push(MinecraftBlock::bit_to_block(hi)?);
             blocks.push(MinecraftBlock::bit_to_block(lo)?);
         }
-        self.place_blocks(blocks)
+        self.send_blocks(blocks)
     }
 }
 
-impl serde::ser::Serializer for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::Serializer for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
@@ -98,8 +88,8 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         match v {
-            true => self.place_block(MinecraftBlock::RedstoneBlock),
-            false => self.place_block(MinecraftBlock::RedstoneLamp),
+            true => self.socket.send_block(MinecraftBlock::RedstoneBlock),
+            false => self.socket.send_block(MinecraftBlock::RedstoneLamp),
         }
     }
 
@@ -161,21 +151,21 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::GildedBlackstone)?;
+        self.socket.send_block(MinecraftBlock::GildedBlackstone)?;
         self.write_bytes(v.as_bytes())?;
-        self.place_block(MinecraftBlock::Prismarine)
+        self.socket.send_block(MinecraftBlock::Prismarine)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::Blackstone)?;
+        self.socket.send_block(MinecraftBlock::Blackstone)?;
         self.write_bytes(v)?;
-        self.place_block(MinecraftBlock::Prismarine)
+        self.socket.send_block(MinecraftBlock::Prismarine)
     }
 
     #[inline]
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::CoalBlock)?;
-        self.place_block(MinecraftBlock::CoalBlock)
+        self.socket.send_block(MinecraftBlock::CoalBlock)?;
+        self.socket.send_block(MinecraftBlock::CoalBlock)
     }
 
     #[inline]
@@ -183,13 +173,13 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        self.place_block(MinecraftBlock::CoalBlock)?;
+        self.socket.send_block(MinecraftBlock::CoalBlock)?;
         value.serialize(OptionSerializer::new(self))
     }
 
     #[inline]
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::Bedrock)
+        self.socket.send_block(MinecraftBlock::Bedrock)
     }
 
     #[inline]
@@ -203,7 +193,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         variant_index: u32,
         _variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::OakLog)?;
+        self.socket.send_block(MinecraftBlock::OakLog)?;
         variant_index.serialize(&mut *self)
     }
 
@@ -215,7 +205,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        self.place_block(MinecraftBlock::SpruceLog)?;
+        self.socket.send_block(MinecraftBlock::SpruceLog)?;
         name.serialize(&mut *self)?;
         value.serialize(&mut *self)
     }
@@ -230,20 +220,20 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        self.place_block(MinecraftBlock::DarkOakLog)?;
+        self.socket.send_block(MinecraftBlock::DarkOakLog)?;
         variant_index.serialize(&mut *self)?;
         value.serialize(self)
     }
 
     #[inline]
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        self.place_block(MinecraftBlock::CherryLog)?;
+        self.socket.send_block(MinecraftBlock::CherryLog)?;
         Ok(self)
     }
 
     #[inline]
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        self.place_block(MinecraftBlock::CrimsonStem)?;
+        self.socket.send_block(MinecraftBlock::CrimsonStem)?;
         Ok(self)
     }
 
@@ -252,7 +242,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        self.place_block(MinecraftBlock::WarpedStem)?;
+        self.socket.send_block(MinecraftBlock::WarpedStem)?;
         self.serialize_str(name)?;
         self.serialize_u32(len as u32)?;
         Ok(self)
@@ -265,14 +255,14 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         _variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        self.place_block(MinecraftBlock::PurpurBlock)?;
+        self.socket.send_block(MinecraftBlock::PurpurBlock)?;
         self.serialize_u32(variant_index)?;
         self.serialize_u32(len as u32)?;
         Ok(self)
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        self.place_block(MinecraftBlock::PurpurPillar)?;
+        self.socket.send_block(MinecraftBlock::PurpurPillar)?;
         Ok(self)
     }
 
@@ -281,7 +271,7 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        self.place_block(MinecraftBlock::GoldBlock)?;
+        self.socket.send_block(MinecraftBlock::GoldBlock)?;
         self.serialize_str(name)?;
         self.serialize_u32(len as u32)?;
         Ok(self)
@@ -294,14 +284,14 @@ impl serde::ser::Serializer for &mut MinecraftSerializer {
         _variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        self.place_block(MinecraftBlock::DiamondBlock)?;
+        self.socket.send_block(MinecraftBlock::DiamondBlock)?;
         self.serialize_u32(variant_index)?;
         self.serialize_u32(len as u32)?;
         Ok(self)
     }
 }
 
-impl serde::ser::SerializeSeq for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::SerializeSeq for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
@@ -315,11 +305,11 @@ impl serde::ser::SerializeSeq for &mut MinecraftSerializer {
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::DarkPrismarine)
+        self.socket.send_block(MinecraftBlock::DarkPrismarine)
     }
 }
 
-impl serde::ser::SerializeTuple for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::SerializeTuple for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
@@ -337,7 +327,7 @@ impl serde::ser::SerializeTuple for &mut MinecraftSerializer {
     }
 }
 
-impl serde::ser::SerializeTupleStruct for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::SerializeTupleStruct for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
@@ -353,7 +343,7 @@ impl serde::ser::SerializeTupleStruct for &mut MinecraftSerializer {
     }
 }
 
-impl serde::ser::SerializeTupleVariant for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::SerializeTupleVariant for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
@@ -369,7 +359,7 @@ impl serde::ser::SerializeTupleVariant for &mut MinecraftSerializer {
     }
 }
 
-impl serde::ser::SerializeMap for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::SerializeMap for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
@@ -391,11 +381,11 @@ impl serde::ser::SerializeMap for &mut MinecraftSerializer {
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::AmethystBlock)
+        self.socket.send_block(MinecraftBlock::AmethystBlock)
     }
 }
 
-impl serde::ser::SerializeStruct for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::SerializeStruct for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
@@ -410,11 +400,11 @@ impl serde::ser::SerializeStruct for &mut MinecraftSerializer {
 
     #[inline(always)]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.place_block(MinecraftBlock::EmeraldBlock)
+        self.socket.send_block(MinecraftBlock::EmeraldBlock)
     }
 }
 
-impl serde::ser::SerializeStructVariant for &mut MinecraftSerializer {
+impl<S: MCWebSocket> serde::ser::SerializeStructVariant for &mut MinecraftSerializer<S> {
     type Ok = ();
     type Error = MinecraftError;
 
