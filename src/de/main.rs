@@ -111,9 +111,9 @@ impl MinecraftDeserializer {
 
         let mut result = 0;
 
-        let signed_block = self.consume()?;
-        if !signed_block.is_light() {
-            result += signed_block.block_to_bit()? as u128;
+        let sign = self.consume()?;
+        if NumberMarker::is_sign_marker(&sign) {
+            result += sign.block_to_bit()? as u128;
         }
 
         loop {

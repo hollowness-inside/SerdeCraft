@@ -1,65 +1,44 @@
 use crate::MinecraftBlock;
 
+macro_rules! impl_num_const {
+    ($($ufn:ident: $base:ident$( - $sfn:ident: $bl:ident)?;)*) => {
+        $(
+            impl_num_const!($ufn: $base $(- $sfn: $bl)*);
+        )*
+    };
+
+    ($ufn:ident: $base:ident - $sfn:ident: $bl:ident) => {
+        impl_num_const!($ufn: $base);
+
+        pub(crate) const $sfn: Self = Self {
+            marker: MinecraftBlock::$base,
+            signed: Some(MinecraftBlock::$bl),
+        };
+    };
+
+    ($name:ident: $base:ident) => {
+        pub(crate) const $name: Self = Self {
+            marker: MinecraftBlock::$base,
+            signed: None,
+        };
+    }
+}
+
 pub(crate) struct NumberMarker {
     pub(crate) marker: MinecraftBlock,
     pub(crate) signed: Option<MinecraftBlock>,
 }
 
 impl NumberMarker {
-    pub(crate) const I8: Self = Self {
-        marker: MinecraftBlock::EndStone,
-        signed: Some(MinecraftBlock::OchreFroglight),
-    };
-
-    pub(crate) const I16: Self = Self {
-        marker: MinecraftBlock::RawIronBlock,
-        signed: Some(MinecraftBlock::VerdantFroglight),
-    };
-
-    pub(crate) const I32: Self = Self {
-        marker: MinecraftBlock::RawCopperBlock,
-        signed: Some(MinecraftBlock::PearlescentFroglight),
-    };
-
-    pub(crate) const I64: Self = Self {
-        marker: MinecraftBlock::RawGoldBlock,
-        signed: Some(MinecraftBlock::SeaLantern),
-    };
-
-    pub(crate) const U8: Self = Self {
-        marker: MinecraftBlock::EndStone,
-        signed: None,
-    };
-
-    pub(crate) const U16: Self = Self {
-        marker: MinecraftBlock::RawIronBlock,
-        signed: None,
-    };
-
-    pub(crate) const U32: Self = Self {
-        marker: MinecraftBlock::RawCopperBlock,
-        signed: None,
-    };
-
-    pub(crate) const U64: Self = Self {
-        marker: MinecraftBlock::RawGoldBlock,
-        signed: None,
-    };
-
-    pub(crate) const F32: Self = Self {
-        marker: MinecraftBlock::Shroomlight,
-        signed: None,
-    };
-
-    pub(crate) const F64: Self = Self {
-        marker: MinecraftBlock::Glowstone,
-        signed: None,
-    };
-
-    pub(crate) const CHAR: Self = Self {
-        marker: MinecraftBlock::ChiseledDeepslate,
-        signed: None,
-    };
+    impl_num_const! {
+        U8: EndStone - I8: OchreFroglight;
+        U16: RawIronBlock - I16: VerdantFroglight;
+        U32: RawCopperBlock - I32: PearlescentFroglight;
+        U64: RawGoldBlock - I64: SeaLantern;
+        F32: Shroomlight;
+        F64: Glowstone;
+        CHAR: ChiseledDeepslate;
+    }
 
     pub(super) fn is_marker(block: &MinecraftBlock) -> bool {
         matches!(
@@ -71,6 +50,16 @@ impl NumberMarker {
                 | MinecraftBlock::Shroomlight
                 | MinecraftBlock::Glowstone
                 | MinecraftBlock::ChiseledDeepslate
+        )
+    }
+
+    pub(super) fn is_sign_marker(block: &MinecraftBlock) -> bool {
+        matches!(
+            block,
+            MinecraftBlock::OchreFroglight
+                | MinecraftBlock::VerdantFroglight
+                | MinecraftBlock::PearlescentFroglight
+                | MinecraftBlock::SeaLantern
         )
     }
 }
