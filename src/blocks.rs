@@ -31,6 +31,8 @@ macro_rules! block_enum {
     };
 }
 
+/// The number of different blocks that can be represented in a single byte.
+/// This is used for compact storage of block data.
 pub const BASE: usize = 91;
 
 block_enum!({
@@ -227,6 +229,7 @@ impl MinecraftBlock {
             .map_err(|_| MinecraftError::Custom("Could not convert bit to block".to_string()))
     }
 
+    /// Convert a block to its corresponding value in `BASE` base number system.
     pub fn block_to_bit(self) -> MinecraftResult<u8> {
         if self.is_wool() {
             let start = MinecraftBlock::WhiteWool as u8;
@@ -264,6 +267,7 @@ impl MinecraftBlock {
         )))
     }
 
+    /// Checks if the block is a glass block.
     pub const fn is_glass(&self) -> bool {
         matches!(
             self,
@@ -286,6 +290,7 @@ impl MinecraftBlock {
         )
     }
 
+    /// Checks if the block is a wool block.
     pub const fn is_wool(&self) -> bool {
         matches!(
             self,
@@ -308,22 +313,24 @@ impl MinecraftBlock {
         )
     }
 
-    pub const fn is_log(&self) -> bool {
-        matches!(
-            self,
-            MinecraftBlock::CherryLog
-                | MinecraftBlock::BambooLog
-                | MinecraftBlock::BirchLog
-                | MinecraftBlock::OakLog
-                | MinecraftBlock::JungleLog
-                | MinecraftBlock::AcaciaLog
-                | MinecraftBlock::SpruceLog
-                | MinecraftBlock::DarkOakLog
-                | MinecraftBlock::CrimsonStem
-                | MinecraftBlock::WarpedStem
-        )
-    }
+    // Checks if the block is a log block.
+    // pub const fn is_log(&self) -> bool {
+    //     matches!(
+    //         self,
+    //         MinecraftBlock::CherryLog
+    //             | MinecraftBlock::BambooLog
+    //             | MinecraftBlock::BirchLog
+    //             | MinecraftBlock::OakLog
+    //             | MinecraftBlock::JungleLog
+    //             | MinecraftBlock::AcaciaLog
+    //             | MinecraftBlock::SpruceLog
+    //             | MinecraftBlock::DarkOakLog
+    //             | MinecraftBlock::CrimsonStem
+    //             | MinecraftBlock::WarpedStem
+    //     )
+    // }
 
+    /// Checks if the block is a terracotta block.
     pub const fn is_terracotta(&self) -> bool {
         matches!(
             self,
@@ -346,6 +353,7 @@ impl MinecraftBlock {
         )
     }
 
+    /// Checks if the block is a planks block.
     pub const fn is_planks(&self) -> bool {
         matches!(
             self,
@@ -363,6 +371,7 @@ impl MinecraftBlock {
         )
     }
 
+    /// Checks if the block is a concrete block.
     pub const fn is_concrete(&self) -> bool {
         matches!(
             self,
@@ -385,6 +394,7 @@ impl MinecraftBlock {
         )
     }
 
+    /// Checks if the block is a glazed terracotta block.
     pub const fn is_glazed_terracotta(&self) -> bool {
         matches!(
             self,
@@ -407,16 +417,17 @@ impl MinecraftBlock {
         )
     }
 
-    pub const fn is_light(&self) -> bool {
-        matches!(
-            self,
-            MinecraftBlock::OchreFroglight
-                | MinecraftBlock::VerdantFroglight
-                | MinecraftBlock::PearlescentFroglight
-                | MinecraftBlock::Shroomlight
-                | MinecraftBlock::Glowstone
-        )
-    }
+    // Checks if the block is a light-emitting block.
+    // pub const fn is_light(&self) -> bool {
+    //     matches!(
+    //         self,
+    //         MinecraftBlock::OchreFroglight
+    //             | MinecraftBlock::VerdantFroglight
+    //             | MinecraftBlock::PearlescentFroglight
+    //             | MinecraftBlock::Shroomlight
+    //             | MinecraftBlock::Glowstone
+    //     )
+    // }
 }
 
 #[test]
