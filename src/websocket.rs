@@ -7,6 +7,9 @@ pub trait MCWebSocket {
     fn consume_block(&mut self) -> MinecraftResult<MinecraftBlock>;
     fn skip_block(&mut self) -> MinecraftResult<()>;
     fn rewind_block(&mut self) -> MinecraftResult<()>;
+    fn flush(&mut self) -> MinecraftResult<()> {
+        Ok(())
+    }
 }
 
 impl<S> MCWebSocket for WebSocket<S>

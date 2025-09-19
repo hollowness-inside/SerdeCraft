@@ -30,6 +30,12 @@ pub struct MinecraftSerializer<S: MCWebSocket> {
     pub(crate) socket: S,
 }
 
+impl<W: MCWebSocket> Drop for MinecraftSerializer<W> {
+    fn drop(&mut self) {
+        let _ = self.socket.flush();
+    }
+}
+
 impl<S: MCWebSocket> MinecraftSerializer<S> {
     pub fn new(socket: S) -> Self {
         Self { socket }
