@@ -3,6 +3,7 @@ use std::net::TcpStream;
 use tungstenite::WebSocket;
 
 use crate::{
+    NumberMarker,
     blocks::MinecraftBlock,
     de::map::MCMapAccess,
     result::{MinecraftError, MinecraftResult},
@@ -101,16 +102,8 @@ impl MinecraftDeserializer {
     }
 
     fn parse_a_number(&mut self) -> Result<u128, MinecraftError> {
-        let marker_block = self.consume()?;
-        if !matches!(
-            marker_block,
-            MinecraftBlock::EndStone
-                | MinecraftBlock::RawIronBlock
-                | MinecraftBlock::RawCopperBlock
-                | MinecraftBlock::RawGoldBlock
-                | MinecraftBlock::Shroomlight // f32
-                | MinecraftBlock::Glowstone // f64
-        ) {
+        let marker = self.consume()?;
+        if !NumberMarker::is_marker(&marker) {
             return Err(MinecraftError::Custom(
                 "This is not a number prefix".to_string(),
             ));
@@ -125,7 +118,7 @@ impl MinecraftDeserializer {
 
         loop {
             let block = self.consume()?;
-            if block == marker_block {
+            if block == marker {
                 break;
             }
 

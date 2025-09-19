@@ -4,72 +4,10 @@ use serde::Serialize;
 use tungstenite::{Message, WebSocket};
 
 use crate::{
-    MinecraftError, MinecraftResult,
+    MinecraftError, MinecraftResult, NumberMarker,
     blocks::{BASE, MinecraftBlock},
     option_ser::OptionSerializer,
 };
-
-struct NumberMarker {
-    marker: MinecraftBlock,
-    signed: Option<MinecraftBlock>,
-}
-
-impl NumberMarker {
-    const I8: Self = Self {
-        marker: MinecraftBlock::EndStone,
-        signed: Some(MinecraftBlock::OchreFroglight),
-    };
-
-    const I16: Self = Self {
-        marker: MinecraftBlock::RawIronBlock,
-        signed: Some(MinecraftBlock::VerdantFroglight),
-    };
-
-    const I32: Self = Self {
-        marker: MinecraftBlock::RawCopperBlock,
-        signed: Some(MinecraftBlock::PearlescentFroglight),
-    };
-
-    const I64: Self = Self {
-        marker: MinecraftBlock::RawGoldBlock,
-        signed: Some(MinecraftBlock::SeaLantern),
-    };
-
-    const U8: Self = Self {
-        marker: MinecraftBlock::EndStone,
-        signed: None,
-    };
-
-    const U16: Self = Self {
-        marker: MinecraftBlock::RawIronBlock,
-        signed: None,
-    };
-
-    const U32: Self = Self {
-        marker: MinecraftBlock::RawCopperBlock,
-        signed: None,
-    };
-
-    const U64: Self = Self {
-        marker: MinecraftBlock::RawGoldBlock,
-        signed: None,
-    };
-
-    const F32: Self = Self {
-        marker: MinecraftBlock::Shroomlight,
-        signed: None,
-    };
-
-    const F64: Self = Self {
-        marker: MinecraftBlock::Glowstone,
-        signed: None,
-    };
-
-    const CHAR: Self = Self {
-        marker: MinecraftBlock::ChiseledDeepslate,
-        signed: None,
-    };
-}
 
 fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock>> {
     let mut value = value.into();

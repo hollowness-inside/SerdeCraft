@@ -11,3 +11,6 @@ mod ser;
 pub use ser::MinecraftSerializer;
 
 mod option_ser;
+
+mod number_marker;
+pub(crate) use number_marker::NumberMarker;
