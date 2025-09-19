@@ -34,9 +34,10 @@ pub struct MinecraftSerializer {
 
 impl MinecraftSerializer {
     pub fn new(socket: WebSocket<TcpStream>) -> Self {
-        MinecraftSerializer { socket }
+        Self { socket }
     }
 
+    /// Place a single block in the Minecraft world.
     pub(super) fn place_block(&mut self, block: MinecraftBlock) -> Result<(), MinecraftError> {
         let message = Message::text(block.to_string());
         self.socket.send(message)?;
@@ -45,8 +46,10 @@ impl MinecraftSerializer {
     }
 
     #[inline(always)]
-    fn place_blocks(&mut self, blocks: &[MinecraftBlock]) -> Result<(), MinecraftError> {
-        blocks.iter().try_for_each(|&block| self.place_block(block))
+    fn place_blocks(&mut self, blocks: Vec<MinecraftBlock>) -> Result<(), MinecraftError> {
+        blocks
+            .into_iter()
+            .try_for_each(|block: MinecraftBlock| self.place_block(block))
     }
 
     fn serialize_number<T: Into<u128>>(
@@ -54,14 +57,14 @@ impl MinecraftSerializer {
         v: T,
         NumberMarker { marker, signed }: NumberMarker,
     ) -> Result<(), MinecraftError> {
-        self.place_block(marker)?;
+        self.place_block(marker.clone())?;
 
         if let Some(block) = signed {
             self.place_block(block)?;
         }
 
         let v = v.into();
-        self.place_blocks(&number_to_bits(v)?)?;
+        self.place_blocks(number_to_bits(v)?)?;
         self.place_block(marker)
     }
 
@@ -73,7 +76,7 @@ impl MinecraftSerializer {
             blocks.push(MinecraftBlock::bit_to_block(hi)?);
             blocks.push(MinecraftBlock::bit_to_block(lo)?);
         }
-        self.place_blocks(&blocks)
+        self.place_blocks(blocks)
     }
 }
 

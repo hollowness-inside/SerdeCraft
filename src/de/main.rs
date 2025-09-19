@@ -24,7 +24,9 @@ impl MinecraftDeserializer {
     pub(super) fn peek(&mut self) -> MinecraftResult<MinecraftBlock> {
         let block = self.consume()?;
         self.rewind()?;
-        Ok(*self.next.insert(block))
+
+        let _ = self.next.replace(block.clone());
+        Ok(block)
     }
 
     pub(super) fn consume(&mut self) -> MinecraftResult<MinecraftBlock> {

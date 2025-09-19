@@ -5,7 +5,7 @@ macro_rules! block_enum {
         $($name:ident = $value:literal),*
     }) => {
         #[repr(u8)]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, num_enum::TryFromPrimitive)]
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, num_enum::TryFromPrimitive)]
         pub enum MinecraftBlock {
             $($name,)*
         }
@@ -227,35 +227,35 @@ impl MinecraftBlock {
             .map_err(|_| MinecraftError::Custom("Could not convert bit to block".to_string()))
     }
 
-    pub fn block_to_bit(&self) -> MinecraftResult<u8> {
+    pub fn block_to_bit(self) -> MinecraftResult<u8> {
         if self.is_wool() {
             let start = MinecraftBlock::WhiteWool as u8;
-            return Ok(*self as u8 - start);
+            return Ok(self as u8 - start);
         }
 
         if self.is_concrete() {
             let start = MinecraftBlock::WhiteConcrete as u8;
-            return Ok(*self as u8 - start + 16);
+            return Ok(self as u8 - start + 16);
         }
 
         if self.is_terracotta() {
             let start = MinecraftBlock::WhiteTerracotta as u8;
-            return Ok(*self as u8 - start + 32);
+            return Ok(self as u8 - start + 32);
         }
 
         if self.is_glazed_terracotta() {
             let start = MinecraftBlock::WhiteGlazedTerracotta as u8;
-            return Ok(*self as u8 - start + 48);
+            return Ok(self as u8 - start + 48);
         }
 
         if self.is_planks() {
             let start = MinecraftBlock::OakPlanks as u8;
-            return Ok(*self as u8 - start + 64);
+            return Ok(self as u8 - start + 64);
         }
 
         if self.is_glass() {
             let start = MinecraftBlock::WhiteStainedGlass as u8;
-            return Ok(*self as u8 - start + 75);
+            return Ok(self as u8 - start + 75);
         }
 
         Err(MinecraftError::Custom(format!(
