@@ -34,13 +34,15 @@ pub(crate) struct NumberMarker {
 }
 
 impl NumberMarker {
-    impl_num_const!(U8:EndStone-I8:OchreFroglight);
-    impl_num_const!(U16:RawIronBlock-I16:VerdantFroglight);
-    impl_num_const!(U32:RawCopperBlock-I32:PearlescentFroglight);
-    impl_num_const!(U64:RawGoldBlock-I64:SeaLantern);
-    impl_num_const!(F32:Shroomlight);
-    impl_num_const!(F64:Glowstone);
-    impl_num_const!(CHAR:ChiseledDeepslate);
+    impl_num_const! {
+        U8:EndStone-I8:OchreFroglight;
+        U16:RawIronBlock-I16:VerdantFroglight;
+        U32:RawCopperBlock-I32:PearlescentFroglight;
+        U64:RawGoldBlock-I64:SeaLantern;
+        F32:Shroomlight;
+        F64:Glowstone;
+        CHAR:ChiseledDeepslate;
+    }
 
     /// Check if a block is a valid number marker.
     pub(crate) fn is_marker(block: &MinecraftBlock) -> bool {
