@@ -26,7 +26,7 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
     Ok(bits)
 }
 
-pub struct MinecraftSerializer<S> {
+pub struct MinecraftSerializer<S: MCWebSocket> {
     pub(crate) socket: S,
 }
 

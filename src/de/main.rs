@@ -1,29 +1,26 @@
-use std::net::TcpStream;
-
-use tungstenite::WebSocket;
-
 use crate::{
     NumberMarker,
     blocks::MinecraftBlock,
     de::map::MCMapAccess,
     result::{MinecraftError, MinecraftResult},
+    websocket::MCWebSocket,
 };
 
 use super::r#enum::MCEnumAccessor;
 
-pub struct MinecraftDeserializer {
-    socket: WebSocket<TcpStream>,
+pub struct MinecraftDeserializer<S: MCWebSocket> {
+    pub(crate) socket: S,
     next: Option<MinecraftBlock>,
 }
 
-impl MinecraftDeserializer {
-    pub fn new(socket: WebSocket<TcpStream>) -> Self {
+impl<S: MCWebSocket> MinecraftDeserializer<S> {
+    pub fn new(socket: S) -> Self {
         MinecraftDeserializer { socket, next: None }
     }
 
     pub(super) fn peek(&mut self) -> MinecraftResult<MinecraftBlock> {
         let block = self.consume()?;
-        self.rewind()?;
+        self.socket.rewind_block()?;
 
         let _ = self.next.replace(block.clone());
         Ok(block)
@@ -31,38 +28,11 @@ impl MinecraftDeserializer {
 
     pub(super) fn consume(&mut self) -> MinecraftResult<MinecraftBlock> {
         if let Some(next) = self.next.take() {
-            self.skip()?;
+            self.socket.skip_block()?;
             return Ok(next);
         }
 
-        self.socket
-            .write(tungstenite::Message::Text("consume".into()))?;
-        self.socket.flush()?;
-
-        let response = self.socket.read()?;
-        let text = response.to_text()?;
-
-        text.try_into()
-    }
-
-    pub(super) fn rewind(&mut self) -> MinecraftResult<()> {
-        self.socket
-            .write(tungstenite::Message::Text("rewind".into()))?;
-        self.socket.flush()?;
-
-        let response = self.socket.read()?;
-        let text = response.to_text()?;
-        match text == "done" {
-            true => Ok(()),
-            false => Err(MinecraftError::RewindFailed),
-        }
-    }
-
-    pub(super) fn skip(&mut self) -> MinecraftResult<()> {
-        self.socket
-            .write(tungstenite::Message::Text("skip".into()))?;
-        self.socket.flush()?;
-        Ok(())
+        self.socket.consume_block()
     }
 
     pub(super) fn parse_number(
@@ -171,7 +141,7 @@ impl MinecraftDeserializer {
     }
 }
 
-impl<'de> serde::de::Deserializer<'de> for &mut MinecraftDeserializer {
+impl<'de, S: MCWebSocket> serde::de::Deserializer<'de> for &mut MinecraftDeserializer<S> {
     type Error = MinecraftError;
 
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>

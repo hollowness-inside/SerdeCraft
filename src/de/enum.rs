@@ -3,21 +3,21 @@ use serde::{
     de::{EnumAccess, VariantAccess, Visitor},
 };
 
-use crate::{MinecraftBlock, MinecraftError};
+use crate::{MinecraftBlock, MinecraftError, websocket::MCWebSocket};
 
 use super::MinecraftDeserializer;
 
-pub struct MCEnumAccessor<'a> {
-    de: &'a mut MinecraftDeserializer,
+pub struct MCEnumAccessor<'a, S: MCWebSocket> {
+    de: &'a mut MinecraftDeserializer<S>,
 }
 
-impl<'a> MCEnumAccessor<'a> {
-    pub fn new(de: &'a mut MinecraftDeserializer) -> Self {
+impl<'a, S: MCWebSocket> MCEnumAccessor<'a, S> {
+    pub fn new(de: &'a mut MinecraftDeserializer<S>) -> Self {
         MCEnumAccessor { de }
     }
 }
 
-impl<'de, 'a> EnumAccess<'de> for MCEnumAccessor<'a> {
+impl<'de, 'a, S: MCWebSocket> EnumAccess<'de> for MCEnumAccessor<'a, S> {
     type Error = MinecraftError;
     type Variant = Self;
 
@@ -30,7 +30,7 @@ impl<'de, 'a> EnumAccess<'de> for MCEnumAccessor<'a> {
     }
 }
 
-impl<'de, 'a> VariantAccess<'de> for MCEnumAccessor<'a> {
+impl<'de, 'a, S: MCWebSocket> VariantAccess<'de> for MCEnumAccessor<'a, S> {
     type Error = MinecraftError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {

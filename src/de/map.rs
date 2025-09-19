@@ -1,16 +1,16 @@
 use serde::de::MapAccess;
 
 use super::MinecraftDeserializer;
-use crate::{MinecraftBlock, result::MinecraftError};
+use crate::{MinecraftBlock, result::MinecraftError, websocket::MCWebSocket};
 
-pub(super) struct MCMapAccess<'a> {
-    deserializer: &'a mut MinecraftDeserializer,
+pub(super) struct MCMapAccess<'a, S: MCWebSocket> {
+    deserializer: &'a mut MinecraftDeserializer<S>,
     terminator: MinecraftBlock,
     finished: bool,
 }
 
-impl<'a> MCMapAccess<'a> {
-    pub fn new(deserializer: &'a mut MinecraftDeserializer, terminator: MinecraftBlock) -> Self {
+impl<'a, S: MCWebSocket> MCMapAccess<'a, S> {
+    pub fn new(deserializer: &'a mut MinecraftDeserializer<S>, terminator: MinecraftBlock) -> Self {
         Self {
             deserializer,
             terminator,
@@ -19,7 +19,7 @@ impl<'a> MCMapAccess<'a> {
     }
 }
 
-impl<'a, 'de> MapAccess<'de> for MCMapAccess<'a> {
+impl<'a, 'de, S: MCWebSocket> MapAccess<'de> for MCMapAccess<'a, S> {
     type Error = MinecraftError;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>

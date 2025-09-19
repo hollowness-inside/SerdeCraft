@@ -1,9 +1,9 @@
 use serde::de::SeqAccess;
 
 use super::MinecraftDeserializer;
-use crate::result::MinecraftError;
+use crate::{result::MinecraftError, websocket::MCWebSocket};
 
-impl<'de> SeqAccess<'de> for MinecraftDeserializer {
+impl<'de, S: MCWebSocket> SeqAccess<'de> for MinecraftDeserializer<S> {
     type Error = MinecraftError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
@@ -13,7 +13,7 @@ impl<'de> SeqAccess<'de> for MinecraftDeserializer {
         match seed.deserialize(&mut *self).map(Some) {
             Ok(value) => Ok(value),
             Err(_) => {
-                self.rewind()?;
+                self.socket.rewind_block()?;
                 Ok(None)
             }
         }

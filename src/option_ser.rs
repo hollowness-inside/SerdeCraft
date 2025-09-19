@@ -28,11 +28,11 @@ macro_rules! serialize {
     };
 }
 
-pub(super) struct OptionSerializer<'a, S> {
+pub(super) struct OptionSerializer<'a, S: MCWebSocket> {
     serializer: &'a mut MinecraftSerializer<S>,
 }
 
-impl<'a, S> OptionSerializer<'a, S> {
+impl<'a, S: MCWebSocket> OptionSerializer<'a, S> {
     pub fn new(serializer: &'a mut MinecraftSerializer<S>) -> Self {
         Self { serializer }
     }
