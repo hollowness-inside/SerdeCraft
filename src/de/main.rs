@@ -25,7 +25,7 @@ impl MinecraftDeserializer {
         let block = self.consume()?;
         self.rewind()?;
 
-        let _ = self.next.replace(block.clone());
+        self.next = Some(block);
         Ok(block)
     }
 
@@ -96,7 +96,7 @@ impl MinecraftDeserializer {
             }
 
             let bit = block.block_to_bit()? as u128;
-            result *= 75;
+            result *= crate::blocks::BASE as u128;
             result += bit;
         }
 
@@ -125,7 +125,7 @@ impl MinecraftDeserializer {
             }
 
             let bit = block.block_to_bit()? as u128;
-            result *= 75;
+            result *= crate::blocks::BASE as u128;
             result += bit;
         }
 
@@ -141,7 +141,8 @@ impl MinecraftDeserializer {
             });
         }
 
-        let mut bytes = Vec::new();
+        // Pre-allocate with a reasonable capacity to reduce allocations
+        let mut bytes = Vec::with_capacity(32);
         loop {
             let b1 = self.consume()?;
             if b1 == MinecraftBlock::Prismarine {

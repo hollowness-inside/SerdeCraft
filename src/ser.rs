@@ -16,7 +16,10 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
         return Ok(vec![MinecraftBlock::bit_to_block(0)?]);
     }
 
-    let mut bits: Vec<MinecraftBlock> = Vec::new();
+    // Pre-calculate capacity: ceil(log_base(value))
+    let capacity = ((128 - value.leading_zeros()) as f64 / (BASE as f64).log2()).ceil() as usize + 1;
+    let mut bits: Vec<MinecraftBlock> = Vec::with_capacity(capacity);
+    
     while value != 0 {
         let bit = value % BASE as u128;
         value /= BASE as u128;
@@ -59,7 +62,7 @@ impl MinecraftSerializer {
         v: T,
         NumberMarker { marker, signed }: NumberMarker,
     ) -> Result<(), MinecraftError> {
-        self.place_block(marker.clone())?;
+        self.place_block(marker)?;
 
         if let Some(block) = signed {
             self.place_block(block)?;
@@ -72,7 +75,7 @@ impl MinecraftSerializer {
 
     /// Write a byte slice as pairs of blocks, each representing a byte split into two base-91 values.
     fn write_bytes(&mut self, v: &[u8]) -> MinecraftResult<()> {
-        let mut blocks = Vec::with_capacity(2 * v.len());
+        let mut blocks = Vec::with_capacity(v.len() * 2);
         for &byte in v {
             let hi = byte / 91;
             let lo = byte % 91;

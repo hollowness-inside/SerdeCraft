@@ -5,7 +5,7 @@ macro_rules! block_enum {
         $($name:ident = $value:literal),*
     }) => {
         #[repr(u8)]
-        #[derive(Debug, Clone, PartialEq, Eq, Hash, num_enum::TryFromPrimitive)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, num_enum::TryFromPrimitive)]
         pub enum MinecraftBlock {
             $($name,)*
         }
