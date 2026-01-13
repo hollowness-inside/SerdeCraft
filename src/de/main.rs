@@ -11,6 +11,10 @@ use crate::{
 
 use super::r#enum::MCEnumAccessor;
 
+/// Initial capacity for byte buffer when parsing strings and byte slices.
+/// This is a reasonable default to reduce allocations for typical strings.
+const INITIAL_BYTES_CAPACITY: usize = 32;
+
 pub struct MinecraftDeserializer {
     socket: WebSocket<TcpStream>,
     next: Option<MinecraftBlock>,
@@ -143,7 +147,7 @@ impl MinecraftDeserializer {
         }
 
         // Pre-allocate with a reasonable capacity to reduce allocations
-        let mut bytes = Vec::with_capacity(32);
+        let mut bytes = Vec::with_capacity(INITIAL_BYTES_CAPACITY);
         loop {
             let b1 = self.consume()?;
             if b1 == MinecraftBlock::Prismarine {

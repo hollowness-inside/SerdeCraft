@@ -16,8 +16,9 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
         return Ok(vec![MinecraftBlock::bit_to_block(0)?]);
     }
 
-    // Pre-calculate capacity: ceil(log_base(value))
-    let capacity = ((128 - value.leading_zeros()) as f64 / (BASE as f64).log2()).ceil() as usize + 1;
+    // Pre-calculate capacity: ceil(log_BASE(value))
+    // log_BASE(value) = ln(value) / ln(BASE)
+    let capacity = ((value as f64).ln() / (BASE as f64).ln()).ceil() as usize + 1;
     let mut bits: Vec<MinecraftBlock> = Vec::with_capacity(capacity);
     
     while value != 0 {
