@@ -22,6 +22,7 @@ impl<'a> MCMapAccess<'a> {
 impl<'a, 'de> MapAccess<'de> for MCMapAccess<'a> {
     type Error = MinecraftError;
 
+    #[inline]
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
         K: serde::de::DeserializeSeed<'de>,
@@ -41,6 +42,7 @@ impl<'a, 'de> MapAccess<'de> for MCMapAccess<'a> {
         seed.deserialize(&mut *self.deserializer).map(Some)
     }
 
+    #[inline]
     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
     where
         V: serde::de::DeserializeSeed<'de>,

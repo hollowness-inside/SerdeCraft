@@ -16,7 +16,12 @@ fn number_to_bits<V: Into<u128>>(value: V) -> MinecraftResult<Vec<MinecraftBlock
         return Ok(vec![MinecraftBlock::bit_to_block(0)?]);
     }
 
-    let mut bits: Vec<MinecraftBlock> = Vec::new();
+    // Pre-calculate capacity: ceil(log_BASE(value))
+    // log_BASE(value) = ln(value) / ln(BASE)
+    // Add 1 for safety margin
+    let capacity = ((value as f64).ln() / (BASE as f64).ln()).ceil() as usize + 1;
+    let mut bits: Vec<MinecraftBlock> = Vec::with_capacity(capacity.max(1));
+    
     while value != 0 {
         let bit = value % BASE as u128;
         value /= BASE as u128;
@@ -45,12 +50,13 @@ impl MinecraftSerializer {
         Ok(())
     }
 
-    /// Place multiple blocks in the Minecraft world by iterating over a vector of blocks.
-    #[inline(always)]
-    fn place_blocks(&mut self, blocks: Vec<MinecraftBlock>) -> Result<(), MinecraftError> {
-        blocks
-            .into_iter()
-            .try_for_each(|block: MinecraftBlock| self.place_block(block))
+    /// Place multiple blocks in the Minecraft world by iterating over a slice of blocks.
+    #[inline]
+    fn place_blocks(&mut self, blocks: &[MinecraftBlock]) -> Result<(), MinecraftError> {
+        for &block in blocks {
+            self.place_block(block)?;
+        }
+        Ok(())
     }
 
     /// Serialize a number with its corresponding marker and an optional signed block if the number is signed.
@@ -59,27 +65,27 @@ impl MinecraftSerializer {
         v: T,
         NumberMarker { marker, signed }: NumberMarker,
     ) -> Result<(), MinecraftError> {
-        self.place_block(marker.clone())?;
+        self.place_block(marker)?;
 
         if let Some(block) = signed {
             self.place_block(block)?;
         }
 
         let v = v.into();
-        self.place_blocks(number_to_bits(v)?)?;
+        self.place_blocks(&number_to_bits(v)?)?;
         self.place_block(marker)
     }
 
     /// Write a byte slice as pairs of blocks, each representing a byte split into two base-91 values.
     fn write_bytes(&mut self, v: &[u8]) -> MinecraftResult<()> {
-        let mut blocks = Vec::with_capacity(2 * v.len());
+        let mut blocks = Vec::with_capacity(v.len() * 2);
         for &byte in v {
             let hi = byte / 91;
             let lo = byte % 91;
             blocks.push(MinecraftBlock::bit_to_block(hi)?);
             blocks.push(MinecraftBlock::bit_to_block(lo)?);
         }
-        self.place_blocks(blocks)
+        self.place_blocks(&blocks)
     }
 }
 

@@ -123,14 +123,14 @@ impl From<tungstenite::Error> for MinecraftError {
 
 impl serde::ser::Error for MinecraftError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
-        eprintln!("Serialization error: {}", msg);
+        eprintln!("Serialization error: {msg}");
         MinecraftError::Custom(msg.to_string())
     }
 }
 
 impl serde::de::Error for MinecraftError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
-        eprintln!("Deserialization error: {}", msg);
+        eprintln!("Deserialization error: {msg}");
         MinecraftError::Custom(msg.to_string())
     }
 }
