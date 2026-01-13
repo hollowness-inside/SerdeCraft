@@ -45,6 +45,7 @@ impl NumberMarker {
     }
 
     /// Check if a block is a valid number marker.
+    #[inline]
     pub(crate) fn is_marker(block: &MinecraftBlock) -> bool {
         matches!(
             block,
@@ -59,6 +60,7 @@ impl NumberMarker {
     }
 
     /// Check if a block is a valid sign marker.
+    #[inline]
     pub(crate) fn is_sign_marker(block: &MinecraftBlock) -> bool {
         matches!(
             block,

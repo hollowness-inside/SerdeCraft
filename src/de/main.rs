@@ -52,9 +52,10 @@ impl MinecraftDeserializer {
 
         let response = self.socket.read()?;
         let text = response.to_text()?;
-        match text == "done" {
-            true => Ok(()),
-            false => Err(MinecraftError::RewindFailed),
+        if text == "done" {
+            Ok(())
+        } else {
+            Err(MinecraftError::RewindFailed)
         }
     }
 

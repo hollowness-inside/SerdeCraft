@@ -197,6 +197,7 @@ block_enum!({
 });
 
 impl MinecraftBlock {
+    #[inline]
     pub fn bit_to_block(mut bit: u8) -> MinecraftResult<Self> {
         let start = match bit {
             0..16 => MinecraftBlock::WhiteWool as u8,
@@ -230,6 +231,7 @@ impl MinecraftBlock {
     }
 
     /// Convert a block to its corresponding value in `BASE` base number system.
+    #[inline]
     pub fn block_to_bit(self) -> MinecraftResult<u8> {
         if self.is_wool() {
             let start = MinecraftBlock::WhiteWool as u8;
@@ -262,8 +264,7 @@ impl MinecraftBlock {
         }
 
         Err(MinecraftError::Custom(format!(
-            "Wrong block to bit: {}",
-            self
+            "Wrong block to bit: {self}"
         )))
     }
 

@@ -48,12 +48,13 @@ impl MinecraftSerializer {
         Ok(())
     }
 
-    /// Place multiple blocks in the Minecraft world by iterating over a vector of blocks.
-    #[inline(always)]
-    fn place_blocks(&mut self, blocks: Vec<MinecraftBlock>) -> Result<(), MinecraftError> {
-        blocks
-            .into_iter()
-            .try_for_each(|block: MinecraftBlock| self.place_block(block))
+    /// Place multiple blocks in the Minecraft world by iterating over a slice of blocks.
+    #[inline]
+    fn place_blocks(&mut self, blocks: &[MinecraftBlock]) -> Result<(), MinecraftError> {
+        for &block in blocks {
+            self.place_block(block)?;
+        }
+        Ok(())
     }
 
     /// Serialize a number with its corresponding marker and an optional signed block if the number is signed.
@@ -69,7 +70,7 @@ impl MinecraftSerializer {
         }
 
         let v = v.into();
-        self.place_blocks(number_to_bits(v)?)?;
+        self.place_blocks(&number_to_bits(v)?)?;
         self.place_block(marker)
     }
 
@@ -82,7 +83,7 @@ impl MinecraftSerializer {
             blocks.push(MinecraftBlock::bit_to_block(hi)?);
             blocks.push(MinecraftBlock::bit_to_block(lo)?);
         }
-        self.place_blocks(blocks)
+        self.place_blocks(&blocks)
     }
 }
 
